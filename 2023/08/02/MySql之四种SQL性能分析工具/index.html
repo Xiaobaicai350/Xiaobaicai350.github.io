@@ -1,0 +1,207 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>MySql之四种SQL性能分析工具 | 是小白菜哦</title><meta name="keywords" content="MySQL"><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="MySql之四种SQL性能分析工具本篇我将为大家讲解SQL性能的分析工具，而只有熟练的掌握了性能分析的工具，才可以更好的对SQL语句进行优化。 SQL执行频率首先我们可以考虑的是：看看这个数据库增删改查的次数是多少，如果查询多，就根据查询多的sql建索引，如果修改添加删除多，就删除索引。所以首先我们得看看这个数据库增删改查的次数分别是多少。 MySQL 客户端连接成功后，通过 show [sess">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySql之四种SQL性能分析工具">
+<meta property="og:url" content="http://example.com/2023/08/02/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="MySql之四种SQL性能分析工具本篇我将为大家讲解SQL性能的分析工具，而只有熟练的掌握了性能分析的工具，才可以更好的对SQL语句进行优化。 SQL执行频率首先我们可以考虑的是：看看这个数据库增删改查的次数是多少，如果查询多，就根据查询多的sql建索引，如果修改添加删除多，就删除索引。所以首先我们得看看这个数据库增删改查的次数分别是多少。 MySQL 客户端连接成功后，通过 show [sess">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2023-08-02T06:16:34.000Z">
+<meta property="article:modified_time" content="2023-08-02T06:20:36.619Z">
+<meta property="article:author" content="小白菜">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2023/08/02/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySql之四种SQL性能分析工具',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-08-02 14:20:36'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">58</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySql之四种SQL性能分析工具</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-08-02T06:16:34.000Z" title="发表于 2023-08-02 14:16:34">2023-08-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-08-02T06:20:36.619Z" title="更新于 2023-08-02 14:20:36">2023-08-02</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="MySql之四种SQL性能分析工具"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="MySql之四种SQL性能分析工具"><a href="#MySql之四种SQL性能分析工具" class="headerlink" title="MySql之四种SQL性能分析工具"></a>MySql之四种SQL性能分析工具</h1><p>本篇我将为大家讲解SQL性能的分析工具，而只有熟练的掌握了性能分析的工具，才可以更好的对SQL语句进行优化。</p>
+<h2 id="SQL执行频率"><a href="#SQL执行频率" class="headerlink" title="SQL执行频率"></a>SQL执行频率</h2><p>首先我们可以考虑的是：看看这个数据库增删改查的次数是多少，如果查询多，就根据查询多的sql建索引，如果修改添加删除多，就删除索引。所以首先我们得看看这个数据库增删改查的次数分别是多少。</p>
+<p>MySQL 客户端连接成功后，通过 <code>show [session|global] status </code>命令可以提供服务器状态信息。</p>
+<p>通过如下指令，可以查看当前数据库的INSERT、UPDATE、DELETE、SELECT的访问频次：  </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-- session 是查看当前会话 ;</span><br><span class="line">-- global 是查询全局数据 ;</span><br><span class="line">-- 其中的Com是固定的</span><br><span class="line">SHOW GLOBAL STATUS LIKE &#x27;Com_______&#x27;;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690940234133-2a60055d-9c98-4045-92bd-0cce583c58f9.png" alt="img"></p>
+<p>比如我们可以看到上面的查询比较多（一般都是查询多），那么如果我们想优化以下，让我们的mysql响应更快，我们咋知道哪个查询语句耗时长呢？所以就要用到MySQL中的慢查询日志了。</p>
+<h2 id="慢查询日志"><a href="#慢查询日志" class="headerlink" title="慢查询日志"></a>慢查询日志</h2><p>慢查询日志记录了<strong>所有执行时间超过指定参数</strong>（long_query_time，单位：秒，默认10秒）的<strong>所有 SQL语句</strong>的日志。  </p>
+<p>简单来说就是看哪一句SQL执行时间长的。</p>
+<p>MySQL的慢查询日志默认没有开启，我们可以查看一下系统变量 <code>slow_query_log</code>。  </p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690940588425-d25f5f0b-4f3f-4d5d-be20-ba9d38d82029.png" alt="img"></p>
+<p> 如果要开启慢查询日志，需要在MySQL的配置文件（&#x2F;etc&#x2F;my.cnf）中配置如下信息：  </p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 开启MySQL慢日志查询开关</span></span><br><span class="line">slow_query_log=<span class="number">1</span></span><br><span class="line"><span class="comment"># 设置慢日志的时间为2秒，SQL语句执行时间超过2秒，就会视为慢查询，记录慢查询日志</span></span><br><span class="line">long_query_time=<span class="number">2</span></span><br></pre></td></tr></table></figure>
+
+<p>配置完毕之后，通过以下指令重新启动MySQL服务器进行测试 <code>systemctl restart mysqld  </code></p>
+<p>查看慢日志文件中记录的信息 <code>/var/lib/mysql/localhost-slow.log</code></p>
+<p> 然后，再次查看开关情况，慢查询日志就已经打开了。  <img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690940745717-bcee2bbd-5da5-4384-b5b8-1c329cdaf349.png" alt="img"></p>
+<p>测试：</p>
+<p> A. 执行如下SQL语句 ：  </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from tb_user; -- 这条SQL执行效率比较高, 执行耗时 0.00sec</span><br><span class="line">select count(*) from tb_sku; -- 由于tb_sku表中, 预先存入了1000w的记录, count一次,耗时13.35sec</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690940791696-15895b41-9a8c-4076-9010-272cf1bdf6a0.png" alt="img"></p>
+<p> B. 检查慢查询日志 ：  </p>
+<p>最终我们发现，在慢查询日志中，只会记录执行时间超多我们预设时间（2s）的SQL，执行较快的SQL是不会记录的。  </p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690940858627-8b6bd16f-832e-46cb-ac57-97b20482baf2.png" alt="img"></p>
+<p> 这样，通过慢查询日志，就可以<strong>定位出执行效率比较低的SQL</strong>，从而有针对性的进行优化。  </p>
+<h2 id="profile详情"><a href="#profile详情" class="headerlink" title="profile详情"></a>profile详情</h2><p>其实这个东西用的比较少</p>
+<p>他是看每一条sql的执行时间详细信息的，比如执行这一条sql哪个阶段花了多少时间啊什么的。</p>
+<p>MySQL是否支持profile操作：  <code>SELECT @@have_profiling ;  </code></p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690941013722-af1a2162-cd49-4c25-bd13-4c2e6954792c.png" alt="img"></p>
+<p>可以看到，当前MySQL是支持 profile操作的，但是开关是关闭的。可以通过set语句在 session&#x2F;global级别开启profiling：   <code>SET profiling = 1; </code></p>
+<p>开关已经打开了，接下来，我们所执行的SQL语句，都会被MySQL记录，并记录执行时间消耗到哪儿去 了。 我们直接执行如下的SQL语句：  </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from tb_user;</span><br><span class="line">select * from tb_user where id = 1;</span><br><span class="line">select * from tb_user where name = &#x27;白起&#x27;;</span><br><span class="line">select count(*) from tb_sku;</span><br></pre></td></tr></table></figure>
+
+<p> 执行一系列的业务SQL的操作，然后通过如下指令查看指令的执行耗时：  </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-- 查看每一条SQL的耗时基本情况</span><br><span class="line">show profiles;</span><br><span class="line">-- 查看指定query_id的SQL语句各个阶段的耗时情况</span><br><span class="line">show profile for query query_id;</span><br><span class="line">-- 查看指定query_id的SQL语句CPU的使用情况</span><br><span class="line">show profile cpu for query query_id;</span><br></pre></td></tr></table></figure>
+
+<p> 查看每一条SQL的耗时情况:  </p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690941257379-bfd41c68-77a2-4018-b2d6-2890fd358b15.png" alt="img"> 查看指定SQL各个阶段的耗时情况 :  </p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690941271475-e1ef42e3-6be9-4f4e-8dff-da00f647e32a.png" alt="img"></p>
+<p>但是其实这个也只能看到每个阶段的执行时间，可以发现execute的时间长了，也没详细信息</p>
+<p>还是得靠下面的这个，比较重要的东西explain</p>
+<h2 id="explain"><a href="#explain" class="headerlink" title="explain"></a>explain</h2><p>EXPLAIN 或者 DESC命令获取 MySQL 如何执行 SELECT 语句的信息，包括在 SELECT 语句执行过程中表如何连接和连接的顺序。  </p>
+<p>但是其实对于查询语句，主要是看他走不走索引，走哪个索引，explain就可以看这些东西，所以他很重要</p>
+<p>语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">EXPLAIN SELECT 字段列表 FROM 表名 WHERE 条件 ;  </span><br></pre></td></tr></table></figure>
+
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690941504430-557cd537-4d5a-4083-a5fd-783967b1a89d.png" alt="img"></p>
+<p><img src="/../pic/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/1690941519411-b9129eea-0cb1-4a7a-85b2-aeb0f8729e93.png" alt="img"></p>
+<p>这个其实对于sql是否走索引，除了根据经验分析，这种是根据实际走没走，更准确。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2023/08/02/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/">http://example.com/2023/08/02/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2023/08/02/%E4%B8%80%E6%96%87%E6%95%99%E4%BC%9A%E4%BD%A0%E4%BB%80%E4%B9%88%E6%98%AFMySQL%E7%9A%84%E7%B4%A2%E5%BC%95%E6%8F%90%E7%A4%BA/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">一文教会你什么是MySQL的索引提示</div></div></a></div><div class="next-post pull-right"><a href="/2023/08/02/%E5%9B%BE%E6%96%87%E5%B9%B6%E8%8C%82%EF%BC%8C%E6%B7%B1%E5%88%BB%E4%BA%86%E8%A7%A3%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">图文并茂，深刻了解索引失效</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2023/08/02/%E4%B8%80%E6%96%87%E6%95%99%E4%BC%9A%E4%BD%A0%E4%BB%80%E4%B9%88%E6%98%AFMySQL%E7%9A%84%E7%B4%A2%E5%BC%95%E6%8F%90%E7%A4%BA/" title="一文教会你什么是MySQL的索引提示"><img class="cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-02</div><div class="title">一文教会你什么是MySQL的索引提示</div></div></a></div><div><a href="/2023/08/02/%E4%BB%80%E4%B9%88%E6%98%AF%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95%EF%BC%8C%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0%E5%91%8A%E8%AF%89%E4%BD%A0/" title="什么是覆盖索引，一篇文章告诉你"><img class="cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-02</div><div class="title">什么是覆盖索引，一篇文章告诉你</div></div></a></div><div><a href="/2023/08/02/%E5%9B%BE%E6%96%87%E5%B9%B6%E8%8C%82%EF%BC%8C%E6%B7%B1%E5%88%BB%E4%BA%86%E8%A7%A3%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88/" title="图文并茂，深刻了解索引失效"><img class="cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-02</div><div class="title">图文并茂，深刻了解索引失效</div></div></a></div><div><a href="/2023/08/02/%E7%B4%A2%E5%BC%95%E8%AE%BE%E8%AE%A1%EF%BC%88%E5%89%8D%E7%BC%80%E7%B4%A2%E5%BC%95%EF%BC%89/" title="索引设计（前缀索引）"><img class="cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-02</div><div class="title">索引设计（前缀索引）</div></div></a></div><div><a href="/2023/08/02/%E6%B5%85%E8%B0%88MySQL%E7%B4%A2%E5%BC%95%E5%88%86%E7%B1%BB/" title="浅谈MySQL索引分类"><img class="cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-02</div><div class="title">浅谈MySQL索引分类</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">58</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7"><span class="toc-number">1.</span> <span class="toc-text">MySql之四种SQL性能分析工具</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL%E6%89%A7%E8%A1%8C%E9%A2%91%E7%8E%87"><span class="toc-number">1.1.</span> <span class="toc-text">SQL执行频率</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%85%A2%E6%9F%A5%E8%AF%A2%E6%97%A5%E5%BF%97"><span class="toc-number">1.2.</span> <span class="toc-text">慢查询日志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#profile%E8%AF%A6%E6%83%85"><span class="toc-number">1.3.</span> <span class="toc-text">profile详情</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#explain"><span class="toc-number">1.4.</span> <span class="toc-text">explain</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/02/%E7%B4%A2%E5%BC%95%E8%AE%BE%E8%AE%A1%EF%BC%88%E5%89%8D%E7%BC%80%E7%B4%A2%E5%BC%95%EF%BC%89/" title="索引设计（前缀索引）">索引设计（前缀索引）</a><time datetime="2023-08-02T06:17:13.000Z" title="发表于 2023-08-02 14:17:13">2023-08-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/02/%E4%BB%80%E4%B9%88%E6%98%AF%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95%EF%BC%8C%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0%E5%91%8A%E8%AF%89%E4%BD%A0/" title="什么是覆盖索引，一篇文章告诉你">什么是覆盖索引，一篇文章告诉你</a><time datetime="2023-08-02T06:17:02.000Z" title="发表于 2023-08-02 14:17:02">2023-08-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/02/%E4%B8%80%E6%96%87%E6%95%99%E4%BC%9A%E4%BD%A0%E4%BB%80%E4%B9%88%E6%98%AFMySQL%E7%9A%84%E7%B4%A2%E5%BC%95%E6%8F%90%E7%A4%BA/" title="一文教会你什么是MySQL的索引提示">一文教会你什么是MySQL的索引提示</a><time datetime="2023-08-02T06:16:51.000Z" title="发表于 2023-08-02 14:16:51">2023-08-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/02/MySql%E4%B9%8B%E5%9B%9B%E7%A7%8DSQL%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/" title="MySql之四种SQL性能分析工具">MySql之四种SQL性能分析工具</a><time datetime="2023-08-02T06:16:34.000Z" title="发表于 2023-08-02 14:16:34">2023-08-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/02/%E5%9B%BE%E6%96%87%E5%B9%B6%E8%8C%82%EF%BC%8C%E6%B7%B1%E5%88%BB%E4%BA%86%E8%A7%A3%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88/" title="图文并茂，深刻了解索引失效">图文并茂，深刻了解索引失效</a><time datetime="2023-08-02T06:16:22.000Z" title="发表于 2023-08-02 14:16:22">2023-08-02</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2023 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
