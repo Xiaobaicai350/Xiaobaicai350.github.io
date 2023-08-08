@@ -1,0 +1,408 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>是小白菜哦 | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Redis网络模型用户空间和内核态空间服务器大多都采用Linux系统，这里我们以Linux为例来讲解: ubuntu和Centos 都是Linux的发行版，发行版可以看成对linux包了一层壳，任何Linux发行版，其系统内核都是Linux。我们的应用都需要通过Linux内核与硬件交互  用户的应用，比如redis，mysql等其实是没有办法去执行访问我们操作系统的硬件的，所以我们可以通过发行版的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="是小白菜哦">
+<meta property="og:url" content="http://example.com/2023/08/08/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="Redis网络模型用户空间和内核态空间服务器大多都采用Linux系统，这里我们以Linux为例来讲解: ubuntu和Centos 都是Linux的发行版，发行版可以看成对linux包了一层壳，任何Linux发行版，其系统内核都是Linux。我们的应用都需要通过Linux内核与硬件交互  用户的应用，比如redis，mysql等其实是没有办法去执行访问我们操作系统的硬件的，所以我们可以通过发行版的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2023-08-08T02:11:09.638Z">
+<meta property="article:modified_time" content="2023-08-08T02:12:12.565Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2023/08/08/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '是小白菜哦',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-08-08 10:12:12'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">68</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">21</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">无题</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-08-08T02:11:09.638Z" title="发表于 2023-08-08 10:11:09">2023-08-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-08-08T02:12:12.565Z" title="更新于 2023-08-08 10:12:12">2023-08-08</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Redis网络模型"><a href="#Redis网络模型" class="headerlink" title="Redis网络模型"></a>Redis网络模型</h2><h3 id="用户空间和内核态空间"><a href="#用户空间和内核态空间" class="headerlink" title="用户空间和内核态空间"></a>用户空间和内核态空间</h3><p>服务器大多都采用Linux系统，这里我们以Linux为例来讲解:</p>
+<p>ubuntu和Centos 都是Linux的发行版，发行版可以看成对linux包了一层壳，任何Linux发行版，其系统内核都是Linux。我们的应用都需要通过Linux内核与硬件交互</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684099977-8e698108-9e7b-4ce2-ac9d-66474607a3ba-169146072598337.png" alt="img"></p>
+<p>用户的应用，比如redis，mysql等其实是没有办法去执行访问我们操作系统的硬件的，所以我们可以通过发行版的这个壳子去访问内核，再通过内核去访问计算机硬件</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100080-0e8192cc-88f2-4b59-b99c-910b4369e3db-169146072598339.png" alt="img"></p>
+<p> 计算机硬件包括，如cpu，内存，网卡等等，内核（通过寻址空间）可以操作硬件的，但是内核需要不同设备的驱动，有了这些驱动之后，内核就可以去对计算机硬件去进行内存管理，文件系统的管理，进程的管理等等</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100205-f589d389-b443-44b3-b9d9-b1e925256350-169146072598341.png" alt="img"></p>
+<p>我们想要用户的应用来访问，计算机就必须要通过对外暴露的一些接口，才能访问到，从而简介的实现对内核的操控，但是内核本身上来说也是一个应用，所以他本身也需要一些内存，cpu等设备资源，用户应用本身也在消耗这些资源，如果不加任何限制，用户去操作随意的去操作我们的资源，就有可能导致一些冲突，甚至有可能导致我们的系统出现无法运行的问题，因此我们需要把用户和<strong>内核隔离开。</strong></p>
+<p>进程的寻址空间划分成两部分：<strong>内核空间、用户空间</strong></p>
+<p>什么是寻址空间呢？我们的应用程序也好，还是内核空间也好，都是没有办法直接去物理内存的，而是通过分配一些虚拟内存映射到物理内存中，我们的内核和应用程序去访问虚拟内存的时候，就需要一个虚拟地址，这个地址是一个无符号的整数，比如一个32位的操作系统，他的带宽就是32，他的虚拟地址就是2的32次方，也就是说他寻址的范围就是0~2的32次方， 这片寻址空间对应的就是2的32个字节，就是4GB，这个4GB，会有3个GB分给用户空间，会有1GB给内核系统</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100296-765e7664-7ac0-4c54-8609-a33ca011d0be-169146072598343.png" alt="img"></p>
+<p>在linux中，他们权限分成两个等级，0和3，用户空间只能执行受限的命令（Ring3），而且不能直接调用系统资源，必须通过内核提供的接口来访问内核空间可以执行特权命令（Ring0），调用一切系统资源，所以一般情况下，用户的操作是运行在用户空间，而内核运行的数据是在内核空间的，而有的情况下，一个应用程序需要去调用一些特权资源，去调用一些内核空间的操作，所以此时他俩需要在用户态和内核态之间进行切换。</p>
+<p>比如：</p>
+<p>Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓冲区：</p>
+<p>写数据时，要把用户缓冲数据拷贝到内核缓冲区，然后写入设备</p>
+<p>读数据时，要从设备读取数据到内核缓冲区，然后拷贝到用户缓冲区</p>
+<p>针对这个操作：我们的用户在写读数据时，会去向内核态申请，想要读取内核的数据，而内核数据要去等待驱动程序从硬件上读取数据，当从磁盘上加载到数据之后，内核会将数据写入到内核的缓冲区中，然后再将数据拷贝到用户态的buffer中，然后再返回给应用程序，整体而言，速度慢，就是这个原因，为了加速，我们希望read也好，还是wait for data也最好都不要等待，或者时间尽量的短。</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100364-11de4dfe-6ed0-4557-9da2-5af5c1903021-169146072598345.png" alt="img"></p>
+<p>在《UNIX网络编程》一书中，总结归纳了5种IO模型：</p>
+<ul>
+<li>阻塞IO（Blocking IO）</li>
+<li>非阻塞IO（Nonblocking IO）</li>
+<li>IO多路复用（IO Multiplexing）</li>
+<li>信号驱动IO（Signal Driven IO）</li>
+<li>异步IO（Asynchronous IO）</li>
+</ul>
+<h3 id="网络模型-阻塞IO"><a href="#网络模型-阻塞IO" class="headerlink" title="网络模型-阻塞IO"></a>网络模型-阻塞IO</h3><p>应用程序想要去读取数据，他是无法直接去读取磁盘数据的，他需要先到内核里边去等待内核操作硬件拿到数据，这个过程就是1，是需要等待的，等到内核从磁盘上把数据加载出来之后，再把这个数据写给用户的缓存区，这个过程是2，如果是阻塞IO，那么整个过程中，用户从发起读请求开始，一直到读取到数据，都是一个阻塞状态。</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100450-19d028a3-3957-45fc-87e1-647c5dd5bfc7-169146072598447.png" alt="img"></p>
+<p>具体流程如下图：</p>
+<p>用户去读取数据时，会去先发起recvform一个命令，去尝试从内核上加载数据，如果内核没有数据，那么用户就会等待，此时内核会去从硬件上读取数据，内核读取数据之后，会把数据拷贝到用户态，并且返回ok，整个过程，都是阻塞等待的，这就是阻塞IO</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100519-539c182e-efec-4e09-b711-3fd7c3180db6-169146072598449.png" alt="img"></p>
+<p><strong>总结如下：</strong></p>
+<p>顾名思义，阻塞IO就是两个阶段都必须阻塞等待</p>
+<p><strong>阶段一：</strong></p>
+<ul>
+<li>用户进程尝试读取数据（比如网卡数据）</li>
+<li>此时数据尚未到达，内核需要等待数据</li>
+<li>此时用户进程也处于阻塞状态</li>
+</ul>
+<p>阶段二：</p>
+<ul>
+<li>数据到达并拷贝到内核缓冲区，代表已就绪</li>
+<li>将内核数据拷贝到用户缓冲区</li>
+<li>拷贝过程中，用户进程依然阻塞等待</li>
+<li>拷贝完成，用户进程解除阻塞，处理数据</li>
+</ul>
+<p>可以看到，阻塞IO模型中，用户进程在两个阶段都是阻塞状态。</p>
+<h3 id="网络模型-非阻塞IO"><a href="#网络模型-非阻塞IO" class="headerlink" title="网络模型-非阻塞IO"></a>网络模型-非阻塞IO</h3><p>顾名思义，非阻塞IO的recvfrom操作会立即返回结果而不是阻塞用户进程。</p>
+<p>阶段一：</p>
+<ul>
+<li>用户进程尝试读取数据（比如网卡数据）</li>
+<li>此时数据尚未到达，内核需要等待数据</li>
+<li>返回异常给用户进程</li>
+<li>用户进程拿到error后，再次尝试读取</li>
+<li>循环往复，直到数据就绪</li>
+</ul>
+<p>阶段二：</p>
+<ul>
+<li>将内核数据拷贝到用户缓冲区</li>
+<li>拷贝过程中，用户进程依然阻塞等待</li>
+<li>拷贝完成，用户进程解除阻塞，处理数据</li>
+<li>可以看到，非阻塞IO模型中，用户进程在第一个阶段是非阻塞，第二个阶段是阻塞状态。虽然是非阻塞，但性能并没有得到提高。而且忙等机制会导致CPU空转，CPU使用率暴增。</li>
+</ul>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100588-f5eb3c31-0c8b-42d2-8cdb-899f3e3df3f6-169146072598451.png" alt="img"></p>
+<p>但是在某些情况必须用非阻塞IO </p>
+<h3 id="网络模型-IO多路复用"><a href="#网络模型-IO多路复用" class="headerlink" title="网络模型-IO多路复用"></a>网络模型-IO多路复用</h3><p>无论是阻塞IO还是非阻塞IO，用户应用在一阶段都需要调用recvfrom来获取数据，差别在于无数据时的处理方案：</p>
+<ol>
+<li>如果调用recvfrom时，恰好没有数据，阻塞IO会使CPU阻塞，非阻塞IO使CPU空转，都不能充分发挥CPU的作用。</li>
+<li>如果调用recvfrom时，恰好有数据，则用户进程可以直接进入第二阶段，读取并处理数据</li>
+</ol>
+<p>所以怎么看起来以上两种方式性能都不好</p>
+<p>而在单线程情况下，只能依次处理IO事件，如果正在处理的IO事件恰好未就绪（数据不可读或不可写），线程就会被阻塞，所有IO事件都必须等待，性能自然会很差。</p>
+<p>就比如服务员给顾客点餐，<strong>分两步</strong>：</p>
+<ul>
+<li>顾客思考要吃什么（等待数据就绪）</li>
+<li>顾客想好了，开始点餐（读取数据）</li>
+</ul>
+<p>要提高效率有几种办法？</p>
+<ul>
+<li>方案一：增加更多服务员（多线程）</li>
+<li>方案二：不排队，谁想好了吃什么（数据就绪了），服务员就给谁点餐（用户应用就去读取数据）</li>
+</ul>
+<p>那么问题来了：用户进程如何知道内核中数据是否就绪呢？</p>
+<p>所以接下来就需要详细的来解决多路复用模型是如何知道到底怎么知道内核数据是否就绪的问题呢？</p>
+<p>这个问题的解决依赖于提出的</p>
+<ul>
+<li><strong>文件描述符（File Descriptor）</strong>：简称FD，是一个从0 开始的无符号整数，用来关联Linux中的一个文件。在Linux中，一切皆文件，例如常规文件、视频、硬件设备等，当然也包括网络套接字（Socket）。</li>
+<li><strong>IO多路复用</strong>：通过FD，我们的网络模型可以利用一个线程监听多个FD，并在某个FD可读、可写时得到通知，从而避免无效的等待，充分利用CPU资源。</li>
+</ul>
+<p>FD相当于顾客，线程相当于服务员</p>
+<p>阶段一：</p>
+<ul>
+<li>用户进程调用select，指定要监听的FD集合</li>
+<li>核监听FD对应的多个socket</li>
+<li>任意一个或多个socket数据就绪则返回readable</li>
+<li>此过程中用户进程阻塞</li>
+</ul>
+<p>阶段二：</p>
+<ul>
+<li>用户进程找到就绪的socket</li>
+<li>依次调用recvfrom读取数据</li>
+<li>内核将数据拷贝到用户空间</li>
+<li>用户进程处理数据</li>
+</ul>
+<p>当用户去读取数据的时候，不再去直接调用recvfrom了，而是调用select的函数，select函数会将需要监听的数据交给内核，由内核去检查这些数据是否就绪了，如果说这个数据就绪了，就会通知应用程序数据就绪，然后来读取数据，再从内核中把数据拷贝给用户态，完成数据处理，如果N多个FD一个都没处理完，此时就进行等待。</p>
+<p>用IO复用模式，可以确保去读数据的时候，数据是一定存在的。他的效率比原来的阻塞IO和非阻塞IO性能都要高</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100666-53fd3fb9-096e-475d-a68e-376ab322c730-169146072598453.png" alt="img"></p>
+<p>IO多路复用是利用单个线程来同时监听多个FD，并在某个FD可读、可写时得到通知，从而避免无效的等待，充分利用CPU资源。不过监听FD的方式、通知的方式又有多种实现，常见的有：</p>
+<ul>
+<li>select</li>
+<li>poll</li>
+<li>epoll</li>
+</ul>
+<p>其中select和pool相当于是当被监听的数据（FD）准备好之后，但是你不确定这个是哪个FD准备好了，它只告诉你有FD好了，你需要到整个FD中去找，但是你现在并不知道这个FD是谁的，所以你需要通过遍历的方式去FD列表中寻找这个FD是谁的，所以性能也并不是那么好</p>
+<p>而epoll，则相当于内核准备好了之后，他会把准备好的数据，直接发给你，并且携带FD的个人信息，咱们就省去了遍历的动作。</p>
+<h4 id="网络模型-IO多路复用-select方式"><a href="#网络模型-IO多路复用-select方式" class="headerlink" title="网络模型-IO多路复用-select方式"></a>网络模型-IO多路复用-select方式</h4><p>select是Linux最早是由的I&#x2F;O多路复用技术：</p>
+<p>简单说，就是我们<strong>把需要处理的数据</strong>封装成<strong>FD</strong>，然后在<strong>用户态</strong>创建一个<strong>fd的集合</strong>（这个集合的大小是要监听的那个FD的最大值+1，但是大小整体是有限制的 ），同时在这个集合中，<strong>标明出来我们要控制哪些数据</strong>。比如要监听的数据，是1,2,5三个数据，此时会<strong>执行select函数</strong>，然后将<strong>整个fd集合</strong>发给内核态，内核态会去遍历用户态传递过来的数据，如果发现这里边都数据都没有就绪，就休眠，直到有数据准备好时，内核就会被唤醒，唤醒之后，首先遍历一遍FD看看哪个FD准备好了，然后再把准备好的FD标记成1，没准备好的FD位标记成0（注意是在原FD集合中修改）。最后再将这个FD集合写回到用户态中去。此时用户态就知道了，奥，有人准备好了，但是对于用户态而言，并不知道谁处理好了，所以用户态也需要去进行遍历FD集合，然后找到对应准备好数据的节点，再去发起读请求。</p>
+<p>但是select存在问题：</p>
+<ol>
+<li>需要将整个fd_set从用户空间拷贝到内核空间，select结束还要再次拷贝回用户空间。其中做了两次的FD集合拷贝</li>
+<li>select无法得知具体是哪个fd就绪，需要遍历整个fdset，性能不是很好</li>
+<li>fdset监听的fd数量不能超过1024个。随着网络发展，1024也太少了。</li>
+</ol>
+<h4 id="网络模型-IO多路复用模型-poll模式"><a href="#网络模型-IO多路复用模型-poll模式" class="headerlink" title="网络模型-IO多路复用模型-poll模式"></a>网络模型-IO多路复用模型-poll模式</h4><p>poll模式对select模式做了简单改进，但性能提升不明显，所以基本上没人用，部分关键代码如下：</p>
+<p>IO流程：</p>
+<ul>
+<li>创建pollfd数组，向其中添加关注的fd信息，数组大小自定义</li>
+<li>调用poll函数，将pollfd数组拷贝到内核空间，转链表存储，无上限</li>
+<li>内核遍历fd，判断是否就绪</li>
+<li>数据就绪或超时后，拷贝pollfd数组到用户空间，返回就绪fd数量n</li>
+<li>用户进程判断n是否大于0,大于0则遍历pollfd数组，找到就绪的fd</li>
+</ul>
+<p><strong>与select对比：</strong></p>
+<ul>
+<li>select模式中的fd_set大小固定为1024，而pollfd在内核中采用链表，理论上无上限</li>
+<li>监听FD越多，每次遍历消耗时间也越久，性能反而会下降</li>
+</ul>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100850-e5b96cc0-ba5b-4ecc-b9de-7c28c33a6ec1-169146072598455.png" alt="img"></p>
+<h4 id="网络模型-IO多路复用模型-epoll函数"><a href="#网络模型-IO多路复用模型-epoll函数" class="headerlink" title="网络模型-IO多路复用模型-epoll函数"></a>网络模型-IO多路复用模型-epoll函数</h4><p>epoll模式是对select和poll的改进，它提供了三个函数：<img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1691397974931-b76ec8eb-03d4-467a-a451-6604425d5d46-169146072598457.png" alt="img"></p>
+<ol>
+<li><p>eventpoll函数，初始化eventpoll，并且创建内部的属性，他内部包含两个东西：</p>
+</li>
+<li><ol>
+<li>红黑树-&gt; 记录的事要监听的FD</li>
+<li>链表-&gt;记录的是就绪的FD</li>
+</ol>
+</li>
+<li><p>epoll_ctl函数</p>
+</li>
+<li><ol>
+<li>将要监听的数据添加到红黑树上去，并且给每个fd设置一个监听函数，这个函数会在fd数据就绪时触发，就是准备好了，现在就把fd把数据添加到list_head（FD就绪链表）中去</li>
+</ol>
+</li>
+<li><p>epoll_wait函数</p>
+</li>
+<li><ol>
+<li>在用户态创建一个空的events数组。当某个FD就绪之后，这个FD的回调函数会把数据添加到list_head中去，当调用epoll_wait函数的时候，会去检查list_head， 如果在检查过程中，检查到了list_head中有数据，会把数据拷贝到之前创建的events数组中，并且返回对应的就绪FD数量，用户态此时收到响应后，从events中拿到对应准备好的数据的节点，再去调用方法去拿数据。</li>
+</ol>
+</li>
+</ol>
+<h5 id="epoll中的ET和LT（事件通知机制）"><a href="#epoll中的ET和LT（事件通知机制）" class="headerlink" title="epoll中的ET和LT（事件通知机制）"></a>epoll中的ET和LT（事件通知机制）</h5><p>当FD有数据可读时，我们调用epoll_wait（或者select、poll）可以得到通知。但是事件通知的模式有两种：</p>
+<ul>
+<li>LevelTriggered：简称LT，也叫做水平触发。只要某个FD中有数据可读，每次调用epoll_wait都会得到通知。</li>
+<li>EdgeTriggered：简称ET，也叫做边沿触发。只有在某个FD有状态变化时，调用epoll_wait才会被通知。</li>
+</ul>
+<p>举个栗子：</p>
+<ol>
+<li>假设一个客户端socket对应的FD已经注册到了epoll实例中</li>
+<li>客户端socket发送了2kb的数据</li>
+<li>服务端调用epoll_wait，得到通知说FD就绪</li>
+<li>服务端从FD读取了1kb数据</li>
+<li>回到步骤3（再次调用epoll_wait，形成循环）</li>
+</ol>
+<p>这里之后就可以看出来区别了</p>
+<ul>
+<li>如果我们采用LT模式，因为FD中仍有1kb数据，则第⑤步依然会得到可读通知</li>
+<li>如果我们采用ET模式，因为第③步已经消费了FD可读事件，所以到第⑤步的时候，epoll_wait不会返回通知，剩下的数据就无法读取了，客户端响应超时。</li>
+</ul>
+<p>不过ET也可以实现类似LT的效果，比如你读取了1kb，但是发现没有读完，可以调用之前我们说过的epoll_ctl函数修改FD的状态，就会进行重新通知了，如果读完了就不用再修改状态了，达到了和LT同样的效果</p>
+<p>你可能会说ET实现这么复杂，为啥还要用ET呢，原因是LT存在问题，刚好ET模式可以避免LT模式出现的惊群现象，并且LT的通知也会很消耗性能。所以存在即合理</p>
+<h5 id="网络模型-基于epoll的服务器端流程"><a href="#网络模型-基于epoll的服务器端流程" class="headerlink" title="网络模型-基于epoll的服务器端流程"></a>网络模型-基于epoll的服务器端流程</h5><p>我们来梳理一下这张图</p>
+<p>服务器启动以后，服务端会去调用<strong>epoll_create</strong>，创建一个epoll实例，epoll实例中包含两个数据</p>
+<ol>
+<li>红黑树（为空）：rb_root 用来去记录需要被监听的FD</li>
+<li>链表（为空）：list_head，用来存放已经就绪的FD</li>
+</ol>
+<p>创建好了之后，会去调用<strong>epoll_ctl函数</strong>，此函数会会将需要<strong>监听的数据</strong>添加到rb_root中去，并且对当前这些存在于红黑树的节点设置回调函数，当这些被监听的数据一旦就绪，就会将红黑树的fd添加到list_head中去(但是此时并没有进行处理)</p>
+<p>3、当第二步完成后，就会调用<strong>epoll_wait函数</strong>，这个函数会去校验是否有数据准备完毕（因为数据一旦准备就绪，就会被回调函数添加到list_head中），在等待了一段时间后，去判断是否超过我们定义的等待超时时间，如果超时则返回没有数据。如果在超时时间内发现了已就绪的FD，则进一步判断当前是什么事件，如果是建立连接事件，则调用accept() 接受客户端socket，拿到建立连接的socket，然后建立起来连接。如果是其他事件，则进行其他事件的处理。</p>
+<p>下面的图示其实就是处理serverSocker的连接事件，当用户连接上了说明有socket就绪了，就会去建立连接通道，如果是用户在通道里面发的其他请求，会是另外的事件类型，下图表现位写出响应</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684100940-bbda1929-24e4-4360-9f27-40b5820a3f0c.png" alt="img"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p><strong>select模式存在的三个问题：</strong></p>
+<ul>
+<li>能监听的FD最大不超过1024</li>
+<li>每次select都需要把所有要监听的FD都拷贝到内核空间，等就绪了还需要再拷贝回去，拷贝太多了</li>
+<li>每次都要遍历所有FD来判断就绪状态</li>
+</ul>
+<p><strong>poll模式的问题：</strong></p>
+<ul>
+<li>poll利用链表解决了select中监听FD上限的问题，但依然要遍历所有FD，如果监听较多，性能会下降</li>
+</ul>
+<p><strong>epoll模式中如何解决这些问题的？</strong></p>
+<ul>
+<li>基于epoll实例中的红黑树保存要监听的FD，理论上<strong>无上限</strong>，而且增删改查效率都非常高，性能不会随着监听的FD数量增多而下降</li>
+<li>每个FD只需要执行一次epoll_ctl添加到红黑树，以后每次epol_wait无需传递任何参数，<strong>无需重复拷贝FD到内核空间，只需要把就绪的FD拷贝回用户空间就行了</strong></li>
+<li>内核会将就绪的FD直接拷贝到用户空间的指定位置，用户进程无需遍历所有的FD就知道就绪的FD是谁</li>
+</ul>
+<h3 id="网络模型-信号驱动IO"><a href="#网络模型-信号驱动IO" class="headerlink" title="网络模型-信号驱动IO"></a>网络模型-信号驱动IO</h3><p>信号驱动IO是与内核建立SIGIO的信号关联并设置回调。当内核有FD就绪时，会发出SIGIO信号通知用户，期间用户应用可以执行其它业务，无需阻塞等待。</p>
+<p>阶段一：</p>
+<ul>
+<li>用户进程调用sigaction，注册信号处理函数</li>
+<li>内核返回成功，开始监听FD</li>
+<li>用户进程不阻塞等待，可以执行其它业务</li>
+<li>当内核数据就绪后，回调用户进程的SIGIO处理函数</li>
+</ul>
+<p>阶段二：</p>
+<ul>
+<li>收到SIGIO回调信号</li>
+<li>调用recvfrom，读取</li>
+<li>内核将数据拷贝到用户空间</li>
+<li>用户进程处理数据</li>
+</ul>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684101018-0cdbec08-0a1c-4181-9f57-7e5727b53a70.png" alt="img"></p>
+<p>你可能会问，这种方式不是挺好的嘛，为啥不用，但是其实它也是有缺点的：当有大量IO操作时，信号较多，SIGIO处理函数不能及时处理可能导致信号队列溢出，而且内核空间与用户空间的频繁信号交互性能也较低（因为是一条一条通知的，不如IO多路复用会直接返回多个FD）。</p>
+<h3 id="网络模型-异步IO（AIO）"><a href="#网络模型-异步IO（AIO）" class="headerlink" title="网络模型-异步IO（AIO）"></a>网络模型-异步IO（AIO）</h3><p>这种方式，不仅仅是用户态在试图读取数据后，不阻塞，而且当内核的数据准备完成后，也不会阻塞</p>
+<p>他会由内核将所有数据处理完成后，由内核将数据写入到用户态中，然后才算完成，所以性能极高，不会有任何阻塞，全部都由内核完成，可以看到，异步IO模型中，用户进程在两个阶段都是非阻塞状态。</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684101109-57105ab6-9dea-4ef7-a62f-65964ca5e873.png" alt="img"></p>
+<p>这种情况的缺点是，在高并发场景下，可能会由于内存导致的崩溃，就像一个领导拼命的让下属干活，最后下属累死了，整个系统就崩溃了</p>
+<h3 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h3><p>最后用一幅图，来说明他们之间的区别</p>
+<p>需要注意的是同步和异步，和阻塞和非阻塞是没有关系的</p>
+<p>前四种都是同步，只有最后一种才是异步</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1689684101183-ee57edff-0008-41f2-bd1d-4f2bcdc9796c.png" alt="img"></p>
+<h3 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h3><p><strong>Redis到底是单线程还是多线程？</strong></p>
+<ul>
+<li>如果仅仅聊Redis的核心业务部分（命令处理），答案是单线程</li>
+<li>如果是聊整个Redis，那么答案就是多线程</li>
+</ul>
+<p>在Redis版本迭代过程中，在两个重要的时间节点上引入了多线程的支持：</p>
+<ul>
+<li>Redis v4.0：引入多线程异步处理一些耗时较旧的任务，例如异步删除命令unlink（先标记可以删除，然后再有个线程慢慢删除）</li>
+<li>Redis v6.0：在核心网络模型中引入多线程，进一步提高对于多核CPU的利用率</li>
+</ul>
+<p>因此，对于Redis的核心网络模型，在Redis 6.0之前确实都是单线程。是利用epoll（Linux系统）这样的IO多路复用技术在事件循环中不断处理客户端情况。</p>
+<p><strong>为什么Redis要选择单线程？</strong></p>
+<ul>
+<li>抛开持久化不谈，Redis是纯内存操作，执行速度非常快，它的性能瓶颈是网络延迟而不是执行速度，因此多线程并不会带来巨大的性能提升。</li>
+<li>多线程会导致过多的上下文切换，带来不必要的开销</li>
+<li>引入多线程会面临线程安全问题，必然要引入线程锁这样的安全手段，实现复杂度增高，而且性能也会大打折扣。所以即使是在现在，redis仍然在命令处理模块使用的还是单线程，在网络模块使用的是多线程。</li>
+</ul>
+<h3 id="Redis的单线程模型-Redis单线程和多线程网络模型变更"><a href="#Redis的单线程模型-Redis单线程和多线程网络模型变更" class="headerlink" title="Redis的单线程模型-Redis单线程和多线程网络模型变更"></a>Redis的单线程模型-Redis单线程和多线程网络模型变更</h3><p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1690446113351-93393f06-f3ca-4e35-bfc4-5140b019d253.png" alt="img"></p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1691410608365-1081a806-da88-48d5-84cd-db01c2a247bf.png" alt="img"></p>
+<p>当我们的客户端想要去连接我们服务器，会去先到IO多路复用模型去进行排队，会有一个连接应答处理器，他会去接受读请求，然后又把读请求注册客户端FD到多路复用程序中去，建立起来的连接如果发起请求了，请求处理器去进行执行命令时，他会去把数据读取出来，然后把数据放入到client中， client去解析当前的命令转化为redis认识的命令，接下来就开始处理这些命令，从redis中的对应的command函数中找到这些命令，然后就真正的去操作对应的数据了，当数据操作完成后，会把结果写入到buf或则reply中，并且把需要响应的client加入到一个写出缓冲区，之后会交给命令回复处理器去一个一个取出处理，由他将数据写出。</p>
+<p>在之后的版本中引入了多线程，其实主要还是解决的带宽的问题，对于redis中执行的模块仍然是单线程，不用考虑多线程问题。</p>
+<p><img src="/../pic/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/1691410800287-df949e99-5628-4607-9aa8-247ef50fd00d-169146072598465.png" alt="img"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2023/08/08/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/">http://example.com/2023/08/08/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2023/08/08/Redis%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE-RESP%E5%8D%8F%E8%AE%AE/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Redis通信协议-RESP协议</div></div></a></div><div class="next-post pull-right"><a href="/2023/08/07/%E8%AF%A6%E8%A7%A3Redis%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">详解Redis底层数据结构</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">68</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">21</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">Redis网络模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E5%92%8C%E5%86%85%E6%A0%B8%E6%80%81%E7%A9%BA%E9%97%B4"><span class="toc-number">1.1.</span> <span class="toc-text">用户空间和内核态空间</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-%E9%98%BB%E5%A1%9EIO"><span class="toc-number">1.2.</span> <span class="toc-text">网络模型-阻塞IO</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-%E9%9D%9E%E9%98%BB%E5%A1%9EIO"><span class="toc-number">1.3.</span> <span class="toc-text">网络模型-非阻塞IO</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8"><span class="toc-number">1.4.</span> <span class="toc-text">网络模型-IO多路复用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8-select%E6%96%B9%E5%BC%8F"><span class="toc-number">1.4.1.</span> <span class="toc-text">网络模型-IO多路复用-select方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E6%A8%A1%E5%9E%8B-poll%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.4.2.</span> <span class="toc-text">网络模型-IO多路复用模型-poll模式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E6%A8%A1%E5%9E%8B-epoll%E5%87%BD%E6%95%B0"><span class="toc-number">1.4.3.</span> <span class="toc-text">网络模型-IO多路复用模型-epoll函数</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#epoll%E4%B8%AD%E7%9A%84ET%E5%92%8CLT%EF%BC%88%E4%BA%8B%E4%BB%B6%E9%80%9A%E7%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%89"><span class="toc-number">1.4.3.1.</span> <span class="toc-text">epoll中的ET和LT（事件通知机制）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-%E5%9F%BA%E4%BA%8Eepoll%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%AB%AF%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.3.2.</span> <span class="toc-text">网络模型-基于epoll的服务器端流程</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.4.4.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-%E4%BF%A1%E5%8F%B7%E9%A9%B1%E5%8A%A8IO"><span class="toc-number">1.5.</span> <span class="toc-text">网络模型-信号驱动IO</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B-%E5%BC%82%E6%AD%A5IO%EF%BC%88AIO%EF%BC%89"><span class="toc-number">1.6.</span> <span class="toc-text">网络模型-异步IO（AIO）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94"><span class="toc-number">1.7.</span> <span class="toc-text">对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%A2%E8%AF%95%E9%A2%98"><span class="toc-number">1.8.</span> <span class="toc-text">面试题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Redis%E7%9A%84%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B-Redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%8F%98%E6%9B%B4"><span class="toc-number">1.9.</span> <span class="toc-text">Redis的单线程模型-Redis单线程和多线程网络模型变更</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/08/%E5%BD%BB%E5%BA%95%E5%BC%84%E6%87%82Redis%E7%9A%84%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="彻底弄懂Redis的内存策略">彻底弄懂Redis的内存策略</a><time datetime="2023-08-08T03:05:02.000Z" title="发表于 2023-08-08 11:05:02">2023-08-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/08/Redis%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE-RESP%E5%8D%8F%E8%AE%AE/" title="Redis通信协议-RESP协议">Redis通信协议-RESP协议</a><time datetime="2023-08-08T02:15:38.000Z" title="发表于 2023-08-08 10:15:38">2023-08-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/08/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B%E5%85%A8%E9%9D%A2%E6%8F%AD%E7%A7%98/" title="无题">无题</a><time datetime="2023-08-08T02:11:09.638Z" title="发表于 2023-08-08 10:11:09">2023-08-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/07/%E8%AF%A6%E8%A7%A3Redis%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" title="详解Redis底层数据结构">详解Redis底层数据结构</a><time datetime="2023-08-07T05:48:31.000Z" title="发表于 2023-08-07 13:48:31">2023-08-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/08/06/Redis%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%8C%81%E4%B9%85%E5%8C%96%E6%96%B9%E5%BC%8F/" title="Redis的两种持久化方式">Redis的两种持久化方式</a><time datetime="2023-08-06T10:28:51.000Z" title="发表于 2023-08-06 18:28:51">2023-08-06</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2023 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
