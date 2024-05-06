@@ -1,0 +1,253 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Go中的协程的底层是怎么实现的？ | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="协程底层是怎么实现的？ 什么是协程？ 协程可以认为是轻量级的线程。与线程相比，创建协程的开销更小。比如说一个Go的应用程序同时运行数千个Go协程是很常见的做法   GPM 模型是什么？ GPM分别是什么？ G（Goroutine）：叫做Go协程，每个go关键字都会创建一个协程。 P（Processor）：叫做调度器（Go中定义的一个摡念，非CPU），里面包含运行Go代码的必要资源，用来调度 G">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go中的协程的底层是怎么实现的？">
+<meta property="og:url" content="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="协程底层是怎么实现的？ 什么是协程？ 协程可以认为是轻量级的线程。与线程相比，创建协程的开销更小。比如说一个Go的应用程序同时运行数千个Go协程是很常见的做法   GPM 模型是什么？ GPM分别是什么？ G（Goroutine）：叫做Go协程，每个go关键字都会创建一个协程。 P（Processor）：叫做调度器（Go中定义的一个摡念，非CPU），里面包含运行Go代码的必要资源，用来调度 G">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2024-05-06T06:38:56.000Z">
+<meta property="article:modified_time" content="2024-05-06T06:39:03.576Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Go中的协程的底层是怎么实现的？',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2024-05-06 14:39:03'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Go中的协程的底层是怎么实现的？</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-05-06T06:39:03.576Z" title="更新于 2024-05-06 14:39:03">2024-05-06</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Go中的协程的底层是怎么实现的？"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><ul>
+<li>协程底层是怎么实现的？<ul>
+<li>什么是协程？<ul>
+<li>协程可以认为是轻量级的线程。与线程相比，创建协程的开销更小。比如说一个Go的应用程序同时运行数千个Go协程是很常见的做法</li>
+</ul>
+</li>
+<li>GPM 模型是什么？<ul>
+<li>GPM分别是什么？<ul>
+<li>G（Goroutine）：叫做Go协程，每个go关键字都会创建一个协程。 P（Processor）：叫做调度器（Go中定义的一个摡念，非CPU），里面包含运行Go代码的必要资源，用来调度 G 和 M 之间的关联关系，其数量可通过 GOMAXPROCS() 来设置，默认为核心数。 M（Machine）：叫做工作线程，在Go中称为Machine，数量对应真实的CPU核数（真正干活的对象）。 M必须拥有P才可以执行G中的代码，P含有一个包含多个G的队列，P可以调度G交由M执行。</li>
+</ul>
+</li>
+<li>Goroutine调度策略是什么？<ul>
+<li>简单简述下线程发展： 1.原始的单线程操作系统： 单核，只能同时执行一个线程，线程按照顺序进行执行，一个执行完了再执行下一个。 存在一些问题：   只能一个线程一个线程执行。   如果线程阻塞了，整个系统都会阻塞   CPU浪费，因为大部分时间都在阻塞，CPU都没有用。</li>
+<li>2.多线程操作系统 多线程操作系统通过将时间划分程时间片，每个线程分配时间片来执行，即使是单核cpu也可以实现并行的效果。   线程切换成本：切换需要CPU调用系统调用，资源的拷贝复制，都会浪费很多时间，而且线程越多，越浪费时间   内存消耗：线程也会占用内存。线程越多，越是浪费内存   开发困难：多线程就必须要解决变量资源统一问题（锁）和资源竞争问题，开发变得越来越困难</li>
+<li>3.go 协程模型&#x2F; GMP 模型 GMP模型把上面的线程分成用户态和内核态两部分，然后内核态就是M，是等于真正执行的CPU，用户态可以创建很多个，这两个是N对M的关系，然后具体应该怎么分配呢，其实是通过调度器P进行分配，这就形成了一个模型。 也就是上面的，具体来说，每个P都会对应一个本地队列，里面保存着G，如果新创建了G，会先放到本地队列（每一个本地队列对应一个P，P通过时间片轮询执行G中的任务，这里你可能会问，这样的话不是也会进行上下文切换吗，不是回到线程上下文的缺点了吗？？但是你要直到，G是用户态啊，用户态的上下文切换成本是很小的，所以这就优化了很多）中执行，当所有的本地队列都满了之后，放不下之后会放到全局队列中，全局队列是加锁的（这也是优化之前版本的，因为加锁解锁很消耗资源。）<ul>
+<li>这个P调度器有四个策略<ul>
+<li>复用线程<ul>
+<li>work stealing机制 如果一个P上的本地协程队列执行完了，为空了，他会优先偷取其他P的本地队列的G，如果其他全部的本地队列都没有G了，就会去全局队列里面拿取G</li>
+<li>hand off机制 如果协程G1进行阻塞了，但是P1的本地队列还有协程，肯定不能浪费CPU呀，这时候如果有其他空闲的P，就会触发work stealing机制，如果没有空闲的P了，就会唤醒一个线程&#x2F;开启一个新的线程M，然后把P1和P1的本地队列都给这个新的线程进行执行。 当G1阻塞结束之后，如果还要运行，就把他添加到其他P上的等待队列，然后把G1阻塞的这个线程进行休眠或者销毁。</li>
+</ul>
+</li>
+<li>利用并行限制<ul>
+<li>可以利用 GOMAXPROCES 进行设置最大 P的数量限定，P的个数比如 CPU数&#x2F;2</li>
+</ul>
+</li>
+<li>抢占<ul>
+<li>其实就是P对本地G分配时间片进行轮询等算法执行</li>
+</ul>
+</li>
+<li>全局队列<ul>
+<li>将 P 中的本地队列放满了，才会放到全局队列。 只有 steal 偷取策略偷不到了，才回去，全局队列去拿，全局队列是加锁的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>协程和线程的区别是什么？<ul>
+<li>内存占用<ul>
+<li>创建一个 goroutine 的栈内存消耗为 2 KB，实际运行过程中，如果栈空间不够用，会自动进行扩容。创建一个 thread 则需要消耗 1 MB 栈内存，而且还需要一个被称为 “a guard page” 的区域用于和其他 thread 的栈空间进行隔离。 对于一个用 Go 构建的 HTTP Server 而言，对到来的每个请求，创建一个 goroutine 用来处理是非常轻松的一件事。而如果用一个使用线程作为并发原语的语言构建的服务，例如 Java 来说，每个请求对应一个线程则太浪费资源了，很快就会出 OOM 错误（OutOfMemoryError）。</li>
+</ul>
+</li>
+<li>创建和销毀<ul>
+<li>Thread 创建和销毀都会有巨大的消耗，因为要和操作系统打交道，是内核级的，通常解决的办法就是线程池。而 goroutine 因为是由 Go runtime 负责管理的，创建和销毁的消耗非常小，是用户级。</li>
+</ul>
+</li>
+<li>上下文切换<ul>
+<li>threads 切换时，需要保存各种寄存器 而 goroutines 切换只需保存三个寄存器：Program Counter, Stack Pointer and BP。 一般而言，线程切换会消耗 1000-1500 纳秒，一个纳秒平均可以执行 12-18 条指令。所以由于线程切换，执行指令的条数会减少 12000-18000。 Goroutine 的切换约为 200 ns，相当于 2400-3600 条指令。 因此，goroutines 切换成本比 threads 要小得多。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>什么是M:N模型？<ul>
+<li>Go runtime 会负责 goroutine 的生老病死，从创建到销毁，都一手包办。Runtime 会在程序启动的时候，创建 M 个线程（CPU 执行调度的单位），之后创建的 N 个 goroutine 都会依附在这 M 个线程上执行。这就是 M:N 模型 在同一时刻，一个线程上只能跑一个 goroutine。当 goroutine 发生阻塞时，runtime 会把当前 goroutine 调度走，让其他 goroutine 来执行。目的就是不让一个线程闲着，榨干 CPU 的每一滴油水。</li>
+</ul>
+</li>
+<li>什么是协程泄漏？（Goroutine Leak）<ul>
+<li>协程泄漏是指协程创建之后，长期得不到释放，并且还在不断的创建新的协程，最终导致内存耗尽的现象，常见的场景有如下：</li>
+<li>缺少接收器，导致发送阻塞 这个例子中，每执行一次 query，则启动1000个协程向信道 ch 发送数字 0，但只接收了一次，导致 999 个协程被阻塞，不能退出。 func query() int { ch :&#x3D; make(chan int) for i :&#x3D; 0; i &lt; 1000; i++ { 	go func() { ch &lt;- 0 }() } return &lt;-ch } func main() { for i :&#x3D; 0; i &lt; 4; i++ { 	query() 	fmt.Printf(“goroutines: %d\n”, runtime.NumGoroutine()) } } &#x2F;&#x2F; goroutines: 1001 &#x2F;&#x2F; goroutines: 2000 &#x2F;&#x2F; goroutines: 2999 &#x2F;&#x2F; goroutines: 3998</li>
+<li>缺少发送器，导致接收阻塞 同样的，如果启动 1000 个协程接收信道的信息，但信道并不会发送那么多次的信息，也会导致接收协程被阻塞，不能退出</li>
+<li>死锁(dead lock) 由于资源争抢等现象会造成死锁，导致两个协程被卡死，不能退出</li>
+</ul>
+</li>
+<li>怎么限制Goroutine的数量？<ul>
+<li>可以使用有缓冲channel来进行限制，每次执行的go之前向通道写入值，直到通道满的时候就阻塞了。<ul>
+<li>type Glimit struct { n int         &#x2F;&#x2F; 最大并发数量 c chan struct{} &#x2F;&#x2F; 用于限制并发数量的通道 } func (g *Glimit) Run(f func()) { g.c &lt;- struct{}{} &#x2F;&#x2F; 通过向通道发送信号来限制并发数量 go func() { 	f() 	&lt;-g.c &#x2F;&#x2F; 执行完毕后从通道接收信号，释放并发数量限制 }() } func New(n int) *Glimit { return &amp;Glimit{ 	n: n, 	c: make(chan struct{}, n), &#x2F;&#x2F; 使用缓冲通道来限制并发数量 } }  func main() { number :&#x3D; 10 &#x2F;&#x2F; 待执行的任务数量 g :&#x3D; New(2)  &#x2F;&#x2F; 创建一个限制最大并发数量为 2 的 Glimit 实例 	wg :&#x3D; make(chan struct{}) &#x2F;&#x2F; 等待所有 goroutine 执行完毕的通道 done :&#x3D; make(chan struct{}) &#x2F;&#x2F; 所有任务执行完毕的信号通道 	for i :&#x3D; 0; i &lt; number; i++ { 	goFunc :&#x3D; func() { 		&#x2F;&#x2F; 在这里进行一些业务逻辑处理 		fmt.Printf(“go func: %d\n”, i) 		time.Sleep(time.Second) &#x2F;&#x2F; 模拟任务执行的耗时 		wg &lt;- struct{}{} &#x2F;&#x2F; 向等待通道发送信号，表示任务执行完毕 	} 	g.Run(goFunc) &#x2F;&#x2F; 使用 Glimit 实例限制并发数量并执行 goFunc 函数 } 	go func() { 	for i :&#x3D; 0; i &lt; number; i++ { 		&lt;-wg &#x2F;&#x2F; 从等待通道接收信号，等待所有任务执行完毕 	} 	done &lt;- struct{}{} &#x2F;&#x2F; 所有任务执行完毕，向 done 通道发送信号 }() 	&lt;-done &#x2F;&#x2F; 等待所有任务执行完毕的信号 }</li>
+</ul>
+</li>
+<li>使用sync.WaitGroup限制并发数量，WaitGroup 对象内部有一个计数器，最初从0开始，它有三个方法：Add(), Done(), Wait() 用来控制计数器的数量。下面示例代码中wg.Wati会阻塞代码的运行，直到计数器值为0。<ul>
+<li>package main import ( “fmt” “sync” “time” ) type Glimit struct { n int &#x2F;&#x2F; 最大并发数量 } func New(n int) *Glimit { return &amp;Glimit{ 	n: n, } } func (g *Glimit) Run(f func()) { g.wg.Add(1) go func() { 	f() 	g.wg.Done() }() } func main() { number :&#x3D; 10 &#x2F;&#x2F; 待执行的任务数量 g :&#x3D; New(2)  &#x2F;&#x2F; 创建一个限制最大并发数量为 2 的 Glimit 实例 	wg :&#x3D; sync.WaitGroup{} &#x2F;&#x2F; 用于等待所有 goroutine 执行完毕的等待组 	for i :&#x3D; 0; i &lt; number; i++ { 	goFunc :&#x3D; func() { 		&#x2F;&#x2F; 在这里进行一些业务逻辑处理 		fmt.Printf(“go func: %d\n”, i) 		time.Sleep(time.Second) &#x2F;&#x2F; 模拟任务执行的耗时 		wg.Done()               &#x2F;&#x2F; 减少等待组的计数器 	} 	g.Run(goFunc) &#x2F;&#x2F; 使用 Glimit 实例限制并发数量并执行 goFunc 函数 } 	wg.Add(number) &#x2F;&#x2F; 设置等待组的计数器为任务数量 wg.Wait() &#x2F;&#x2F; 等待所有 goroutine 执行完毕 }</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>怎么查看Goroutine的数量？<ul>
+<li>可以通过http&#x2F;pprof来进行监听协程的数量，这样的话我们可以通过浏览器就可以进行查看一共有多少个协程了。 查看协程的数量是为了排查协程是否泄漏和运行状况 使用go tool pprof -http&#x3D;:1248 http:.123132123321查看</li>
+</ul>
+</li>
+<li>协程和线程和进程的区别？<ul>
+<li>进程: 进程是具有一定独立功能的程序，进程是系统资源分配和调度的最小单位。每个进程都有自己的独立内存空间，不同进程通过进程间通信来通信。由于进程比较重量，占据独立的内存，所以上下文进程间的切换开销（栈、寄存器、虚拟内存、文件句柄等）比较大，但相对比较稳定安全。 线程: 线程是进程的一个实体,线程是内核态,而且是CPU调度和分派的基本单位,它是比进程更小的能独立运行的基本单位。线程间通信主要通过共享内存，上下文切换很快，资源开销相比进程较少，但是相比进程不够稳定容易丢失数据。 协程: 协程是一种用户态的轻量级线程，协程的调度完全是由用户来控制的。协程拥有自己的寄存器上下文和栈。协程调度切换时，将寄存器上下文和栈保存到其他地方，在切回来的时候，恢复先前保存的寄存器上下文和栈，直接操作栈则基本没有内核切换的开销，可以不加锁的访问全局变量，所以上下文的切换非常快。</li>
+</ul>
+</li>
+<li>main主协程怎么等待其余协程结束之后再进行一些操作？<ul>
+<li>使用sync.WaitGroup。WaitGroup就是用来等待一组操作完成的。WaitGroup内部实现了一个计数器，用来记录未完成的操作个数。Add()用来添加计数；Done()用来在操作结束时调用，使计数减一；Wait()用来等待所有的操作结束，即计数变为0，该函数会在计数不为0时等待，在计数为0时立即返回。</li>
+</ul>
+</li>
+<li>go可以限制运行时操作系统的线程数量吗？<ul>
+<li>是可以进行限制的 可以使用环境变量 GOMAXPROCS 或 runtime.GOMAXPROCS(num int) 设置，例如： runtime.GOMAXPROCS(1) &#x2F;&#x2F; 限制同时执行Go代码的操作系统线程数为 1</li>
+<li>但是这些限制的是同时执行用户态go代码的操作系统的线程的数量，但是还有线程阻塞的线程数量呢。对于操作系统线程数量的设置，得看是CPU密集型还是IO密集型，如果是CPU密集型，需要尽量压榨cpu，设置核数+1就可以了，防止上下文切换，如果是IO，可以设置成核数*2.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/">http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Go中的内存管理？</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Go中的map的底层是怎么实现的？</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/" title="Go中的内存管理？">Go中的内存管理？</a><time datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的协程的底层是怎么实现的？">Go中的协程的底层是怎么实现的？</a><time datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的map的底层是怎么实现的？">Go中的map的底层是怎么实现的？</a><time datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的Channel的底层是怎么实现的？">Go中的Channel的底层是怎么实现的？</a><time datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="Redis内存策略">Redis内存策略</a><time datetime="2024-04-22T06:36:13.000Z" title="发表于 2024-04-22 14:36:13">2024-04-22</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

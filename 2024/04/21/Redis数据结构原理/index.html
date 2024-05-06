@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Redis数据结构原理 | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Redis数据结构原理 String String有三种编码方式： 1.RAW编码：基于简单动态字符串实现 2.EMBSTR编码 3.INT编码 RAW，基于简单动态字符串（SDS）实现，存储上限为512mb。 如果存储的SDS长度小于44字节（RedisObject+SDS的长度加起来刚好是64，这样做的好处是不会产生内存碎片），则会采用EMBSTR编码，此时RedisObject与SDS是一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis数据结构原理">
+<meta property="og:url" content="http://example.com/2024/04/21/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="Redis数据结构原理 String String有三种编码方式： 1.RAW编码：基于简单动态字符串实现 2.EMBSTR编码 3.INT编码 RAW，基于简单动态字符串（SDS）实现，存储上限为512mb。 如果存储的SDS长度小于44字节（RedisObject+SDS的长度加起来刚好是64，这样做的好处是不会产生内存碎片），则会采用EMBSTR编码，此时RedisObject与SDS是一">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2024-04-21T06:34:57.000Z">
+<meta property="article:modified_time" content="2024-05-06T06:35:33.851Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2024/04/21/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%8E%9F%E7%90%86/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Redis数据结构原理',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2024-05-06 14:35:33'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Redis数据结构原理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-04-21T06:34:57.000Z" title="发表于 2024-04-21 14:34:57">2024-04-21</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-05-06T06:35:33.851Z" title="更新于 2024-05-06 14:35:33">2024-05-06</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Redis数据结构原理"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><ul>
+<li>Redis数据结构原理<ul>
+<li>String<ul>
+<li>String有三种编码方式： 1.RAW编码：基于简单动态字符串实现 2.EMBSTR编码 3.INT编码<ul>
+<li>RAW，基于简单动态字符串（SDS）实现，存储上限为512mb。</li>
+<li>如果存储的SDS长度小于44字节（RedisObject+SDS的长度加起来刚好是64，这样做的好处是不会产生内存碎片），则会采用EMBSTR编码，此时RedisObject与SDS是一段连续空间。申请内存时只需要调用一次内存分配函数（RAW编码需要调用两次内存分配函数，先申请RedisObject再申请SDS的）</li>
+<li>如果存储的字符串是整数值，并且大小在LONG_MAX（8字节）范围内，则会采用INT编码：直接将数据保存在RedisObject的ptr指针位置（刚好8字节），不再需要SDS的参与了<ul>
+<li>long型还有的特点是： 在对string进行incr（+1）, decr（-1）等操作的时候 ● 如果它内部是OBJ_ENCODING_INT编码，那么可以直接行加减操作； ● 如果它内部是OBJ_ENCODING_RAW或OBJ_ENCODING_EMBSTR编码，那么Redis会先试图把字符串转成long型，如果能转成功，再进行加减操作。 如果对⼀个内部表示成long型的string执行append, setbit, getrange这些命令，针对的仍然是string的值。比如字符串”32”，如果按照字符数组来解释，它包含两个字符，它们的ASCII码分别是0x33和0x32 。当我们执行命令setbit key 7 0的时候，相当于把字符0x33变成了0x32，这样字符串的值就变成了”22”。⽽如果将字符串”32”按照内部的64位long型来解释，那么它是0x0000000000000020，在这个基础上执⾏setbit位操作，结果就跟之前的不一样了。因此，在这些命令的实现中，会把long型先转成字符串再进行相应的操作。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>List<ul>
+<li>● 在3.2版本之前，Redis采用ZipList或者LinkedList来实现List，当元素数量小于512并且元素大小小于64字节时采用ZipList编码，超过则采用LinkedList编码。 ● 在3.2版本之后，Redis统一采用QuickList来实现List</li>
+</ul>
+</li>
+<li>Set<ul>
+<li>Set会在不同情况下采用不同的编码： ● 当存储的所有数据都是整数，并且元素数量不超过set-max-intset-entries时，Set会采用IntSet编码，以节省内存 ● 否则就采用HT进行编码（也就是Dict），key用来存储元素，value设置为null 并且这两种编码可以进行转换</li>
+</ul>
+</li>
+<li>ZSet<ul>
+<li>ZSet也就是SortedSet，其中每一个元素都需要指定一个score值和member值（set中member值唯一），所以这个数据结构需要满足kv存储、key唯一、可排序 所以就有下面两种选择 ● ZipList ● HT+SkipList<ul>
+<li>ZipList情况： 当元素数量不多时，zset会采用ZipList结构（它不能存储太多元素，所以要满足下面的条件）来节省内存，不过需要同时满足两个条件： ● 元素数量小于zset_max_ziplist_entries，默认值128 ● 每个元素都小于zset_max_ziplist_value字节，默认值64 跟上面提到的Set数据结构一样，ZipList和HT+SkipList也可以进行相互转换<ul>
+<li>为什么可以选择ZipList呢？他既不可以保证有序，又不保证键唯一，又不满足键值存储！！！ 为啥选择他！！！ 答案是因为他内存占用比较小，这些功能可以由Redis编码然后进行实现：比如他实现键值存储就是用相邻的两个entry，一个当作key，一个当成value。排序是：每次添加就去entrys里面去找，添加的时候按顺序添加和唯一添加就好了。 但是你会说，这种性能比hash差啊，其实也不会差多少，这是有原因的，因为这种情况数据量小，所以这些遍历链表进行排序或者插入的业务不会特别影响性能，但是如果数据量大的话，就会很影响了，但是数据量大的话我们就不采用这种方式了，就换成另一种方式了。</li>
+</ul>
+</li>
+<li>HT+SkipList的情况： ● SkipList：可以排序，并且可以同时存储score和ele值（member）（但是不满足key唯一和根据key找值） ● HT（Dict）：可以键值存储，并且可以根据key找value（无法排序） 可以发现，这两个单个都无法满足我们的需求，所以redis底层是把这两种数据结构进行组合进行使用的。那他是怎么组合的呢，他是把数据进行存储了两份，用双重的内存占用来换取功能。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Hash<ul>
+<li>Hash结构与Redis中的Zset非常类似： ● 都是kv存储 ● key唯一 区别如下： ● ZSet的键是member，值是score；Hash的键和值都是任意值 ● ZSet要根据score排序；Hash则无需排序 所以可以看出来这个Hash和ZSet超级像，所以他们的底层采用的编码也基本一致，只需要把有关排序的SkipList给去掉就行了 所以Hash的底层实现方式： ● ZipList ● HT<ul>
+<li>当Hash中数据项比较少的情况下，Hash底层采⽤压缩列表ZipList进⾏存储数据</li>
+<li>随着数据的增加，底层的ziplist就可能会转成dict，当满足下面条件之一就会进行转换。  ○ ziplist中的元素数量 hash-max-ziplist-entries 512  ○ ziplist中的任意entry的大小  hash-max-ziplist-value 64</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/04/21/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%8E%9F%E7%90%86/">http://example.com/2024/04/21/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%8E%9F%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/04/22/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Redis网络模型</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/20/Redis%E8%87%AA%E5%B7%B1%E5%88%9B%E5%BB%BA%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Redis自己创建的数据类型</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/" title="Go中的内存管理？">Go中的内存管理？</a><time datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的协程的底层是怎么实现的？">Go中的协程的底层是怎么实现的？</a><time datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的map的底层是怎么实现的？">Go中的map的底层是怎么实现的？</a><time datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的Channel的底层是怎么实现的？">Go中的Channel的底层是怎么实现的？</a><time datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="Redis内存策略">Redis内存策略</a><time datetime="2024-04-22T06:36:13.000Z" title="发表于 2024-04-22 14:36:13">2024-04-22</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Go中的内存管理？ | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="go中的内存管理 Go的内存分配机制是什么？ 设计思想 内存分配算法采用Google的TCMalloc算法，每个线程都会自行维护一个独立的内存池，进行内存分配时优先从本线程的内存池中分配，当内存池不足时才会向加锁向全局内存池申请，减少系统调用并且避免不同线程对全局内存池的锁竞争 把内存切分的非常的细小，分为多级管理，以降低锁的粒度 回收对象内存时，并没有将其真正释放掉，只是放回内存池中，以便复用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go中的内存管理？">
+<meta property="og:url" content="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="go中的内存管理 Go的内存分配机制是什么？ 设计思想 内存分配算法采用Google的TCMalloc算法，每个线程都会自行维护一个独立的内存池，进行内存分配时优先从本线程的内存池中分配，当内存池不足时才会向加锁向全局内存池申请，减少系统调用并且避免不同线程对全局内存池的锁竞争 把内存切分的非常的细小，分为多级管理，以降低锁的粒度 回收对象内存时，并没有将其真正释放掉，只是放回内存池中，以便复用">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2024-05-06T06:39:31.000Z">
+<meta property="article:modified_time" content="2024-05-06T06:39:44.760Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Go中的内存管理？',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-05-06 14:39:44'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Go中的内存管理？</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-05-06T06:39:44.760Z" title="更新于 2024-05-06 14:39:44">2024-05-06</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Go中的内存管理？"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><ul>
+<li>go中的内存管理<ul>
+<li>Go的内存分配机制是什么？<ul>
+<li>设计思想 内存分配算法采用Google的TCMalloc算法，每个线程都会自行维护一个独立的内存池，进行内存分配时优先从本线程的内存池中分配，当内存池不足时才会向加锁向全局内存池申请，减少系统调用并且避免不同线程对全局内存池的锁竞争 把内存切分的非常的细小，分为多级管理，以降低锁的粒度 回收对象内存时，并没有将其真正释放掉，只是放回内存池中，以便复用。只有内存闲置过多的时候，才会尝试归还部分内存给操作系统，降低整体开销</li>
+<li>分配组件 Go的内存管理组件主要有：mspan、mcache、mcentral和mheap<ul>
+<li>内存管理单元：mspan mspan是 内存管理的基本单元，该结构体中包含 next 和 prev 两个字段，它们分别指向了前一个和后一个mspan，每个mspan 都管理 npages 个大小为 8KB 的页，一个span 是由多个page组成的，这里的页不是操作系统中的内存页，它们是操作系统内存页的整数倍。 page是内存存储的基本单元，Go中的“对象”就是放到page中的<ul>
+<li>Go有68种不同大小的spanClass，用于小对象的分配 如果按照序号为1的spanClass（对象规格为8B）分配，每个span占用堆的字节数：8k，mspan可以保存1024个对象 如果按照序号为2的spanClass（对象规格为16B）分配，每个span占用堆的字节数：8k，mspan可以保存512个对象 … 如果按照序号为67的spanClass（对象规格为32K）分配，每个span占用堆的字节数：32k，mspan可以保存1个对象</li>
+</ul>
+</li>
+<li>线程缓存：mcache mcentral 的前面又增加了一层 mcache。 每一个 mcache 和每一个处理器(P) 是一一对应的，也就是说每一个 P 都有一个 mcache 成员。 Goroutine 申请内存时，首先从其所在的 P 的 mcache 中分配，如果 mcache 没有可用 span ，再从 mcentral 中获取，并填充到 mcache 中。 从 mcache 上分配内存空间是不需要加锁的，因为在同一时间里，一个 P 只有一个线程在其上面运行，不可能出现竞争。没有了锁的限制，大大加速了内存分配。 mcache在初始化的时候是没有任何mspan资源的，在使用过程中会动态地从mcentral申请，之后会缓存下来。当对象小于等于32KB大小时，使用mcache的相应规格的mspan进行分配。</li>
+<li>中心缓存：mcentral mcentral管理全局的mspan，mheap中包含着所有的mcentral 每个mcentral管理一种mspan，并将有空闲空间和没有空闲空间的mspan分开存储。可以通过pop、push方法来获得mspans 具体的结构如下： type mcentral struct {    spanclass spanClass &#x2F;&#x2F; 指当前存储的span类型是什么     partial [2]spanSet &#x2F;&#x2F; 有空闲object的mspan列表    full    [2]spanSet &#x2F;&#x2F; 没有空闲object的mspan列表 }<ul>
+<li>mcache从mcentral获取和归还mspan的流程： 获取mspan：加锁，从partial链表找到一个可用的mspan；并将其从partial链表删除；将取出的mspan加入到full链表；将mspan返回给工作线程，解锁。 归还mspan：加锁，将mspan从full链表删除；将mspan加入到partial链表，解锁。</li>
+</ul>
+</li>
+<li>页堆：mheap mheap管理Go的所有动态分配内存，可以认为是Go程序持有的整个堆空间，全局唯一 所有mcentral的集合则是存放于mheap中的。mheap里的arena 区域是堆内存的抽象，运行时会将 8KB 看做一页，这些内存页中存储了所有在堆上初始化的对象。运行时使用二维的 runtime.heapArena 数组管理所有的内存，每个 runtime.heapArena 都会管理 64MB 的内存。 当申请内存时，依次经过 mcache 和 mcentral 都没有可用合适规格的大小内存，这时候会向 mheap 申请一块内存。然后按指定规格划分为一些列表，并将其添加到相同规格大小的 mcentral 的 非空闲列表 后面</li>
+</ul>
+</li>
+<li>分配对象<ul>
+<li>微对象 (0, 16B)：先尝试线程缓存上的微型分配器，再依次尝试线程缓存、中心缓存、堆分配内存； 小对象 [16B, 32KB]：依次尝试线程缓存、中心缓存、堆分配内存； 大对象 (32KB, +∞)：直接尝试堆分配内存；</li>
+</ul>
+</li>
+<li>分配流程<ul>
+<li>首先通过计算判断需要使用mspan的大小规格 然后使用mcache中对应大小规格的块分配。 如果mcentral中没有可用的块，则向mheap申请，并根据算法找到最合适的mspan。 如果申请到的mspan 超出申请大小，将会根据需求进行切分，以返回用户所需的页数。剩余的页构成一个新的 mspan 放回 mheap 的空闲列表。 如果 mheap 中没有可用 span，则向操作系统申请一系列新的页（最小 1MB）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>为什么三色标记清除法基本不存在内存碎片问题？<ul>
+<li>Go 运行时的分配算法基于 tcmalloc，基本上没有碎片问题。</li>
+</ul>
+</li>
+<li>为什么go不采用分代gc的策略？<ul>
+<li>分代 GC 依赖分代假设，即 GC 将主要的回收目标放在新创建的对象上（存活时间短，更倾向于被回收），而非频繁检查所有对象。但 Go 的编译器会通过逃逸分析将大部分新生对象存储在栈上（栈直接被回收），只有那些需要长期存在的对象才会被分配到需要进行垃圾回收的堆中。也就是说，分代 GC 回收的那些存活时间短的对象在 Go 中是直接被分配到栈上，当 goroutine 死亡后栈也会被直接回收，不需要 GC 的参与，进而分代假设并没有带来直接优势。并且 Go 的垃圾回收器与用户代码并发执行，使得 STW 的时间与对象的代际、对象的 size 没有关系。Go 团队更关注于如何更好地让 GC 与用户代码并发执行（使用适当的 CPU 来执行垃圾回收），而非减少停顿时间这一单一目标上。</li>
+</ul>
+</li>
+<li>内存逃逸机制是什么？<ul>
+<li>C++存在有一个很大的坑，下面来说一下，对比一下Go中的内存逃逸机制的好处： int* foo ()    {       int t &#x3D; 3;    return &amp;t; } 在函数内部定义了一个局部变量，然后返回这个局部变量的地址（指针）。这些局部变量是在栈上分配的（静态内存分配），一旦函数执行完毕，变量占据的内存会被销毁，任何对这个返回值作的动作（如解引用），都将扰乱程序的运行，甚至导致程序直接崩溃。 这个坑可以通过一些方式进行解决，使用new函数创建变量t（动态内存分配），然后返回此变量的地址。因为变量是在堆上创建的，所以函数退出时不会被销毁。但是，这样就行了吗？还存在第二个问题：new出来的对象该在何时何地delete呢？调用者可能会忘记delete或者直接拿返回值传给其他函数，之后就再也不能delete它了，也就是发生了内存泄露。</li>
+<li>上面C++存在的坑，在Go里面完全不存在，因为有内存逃逸机制存在，而且go里面存在GC回收机制，不用担心第二个问题的解决。真是C&#x2F;C++之砒霜Go之蜜糖！</li>
+<li>每一个函数创建的时候都会创建对应的栈帧，由于函数结束后栈帧会被释放，但是函数里面的变量可能我们当函数结束后，还想使用它，这时候就发生了内存逃逸现象，函数里的变量分配在堆上还是栈上是由Go系统来通过内存逃逸算法进行决定的。</li>
+<li>内存逃逸算法： 如果函数外部没有引用，则优先放到栈中； 如果函数外部存在引用，则必定放到堆中; 如果栈上放不下，则必定放到堆上;</li>
+<li>发生内存逃逸的场景<ul>
+<li>指针逃逸<ul>
+<li>func escape1() *int {    var a int &#x3D; 1    return &amp;a } func main() {    escape1() } 函数返回值为局部变量的指针，函数虽然退出了，但是因为指针的存在，指向的内存不能随着函数结束而回收，因此只能分配在堆上。</li>
+</ul>
+</li>
+<li>栈空间不足<ul>
+<li>func escape2() {    s :&#x3D; make([]int, 0, 10000)    for index, _ :&#x3D; range s {        s[index] &#x3D; index    } } func main() {    escape2() } 当栈空间足够时，不会发生逃逸，但是当变量过大时，已经完全超过栈空间的大小时，将会发生逃逸到堆上分配内存。局部变量s占用内存过大，编译器会将其分配到堆上</li>
+</ul>
+</li>
+<li>变量大小不确定<ul>
+<li>func escape3() {    number :&#x3D; 10    s :&#x3D; make([]int, number) &#x2F;&#x2F; 编译期间无法确定slice的长度    for i :&#x3D; 0; i &lt; len(s); i++ {        s[i] &#x3D; i    } } func main() {    escape3() } 编译期间无法确定slice的长度，这种情况为了保证内存的安全，编译器也会触发逃逸，在堆上进行分配内存。直接s :&#x3D; make([]int, 10)不会发生逃逸</li>
+</ul>
+</li>
+<li>闭包引用对象<ul>
+<li>func escape4() func() int {    var i int &#x3D; 1    return func() int {        i++        return i    } } func main() {    escape4() } 闭包函数中局部变量i在后续函数是继续使用的，编译器将其分配到堆上</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>内存对齐了解吗？<ul>
+<li>CPU 访问内存时，并不是逐个字节访问，而是以字长（word size）为单位访问。比如 32 位的 CPU ，字长为 4 字节，那么 CPU 访问内存的单位也是 4 字节。 CPU 始终以字长访问内存，如果不进行内存对齐，很可能增加 CPU 访问内存的次数， 简言之：合理的内存对齐可以提高内存读写的性能。</li>
+<li>为了能让CPU可以更快的存取到各个字段，Go编译器会帮我们把struct结构体做数据的对齐。 对齐原则： 1.结构体变量中成员的偏移量必须是成员大小的整数倍 2.整个结构体的地址必须是最大字节的整数倍（结构体的内存占用是1&#x2F;4&#x2F;8&#x2F;16byte…)<ul>
+<li><h2 id="type-T1-struct-bool-bool-x2F-x2F-1-byte-i16-int16-x2F-x2F-2-byte-type-T2-struct-i8-int8-x2F-x2F-1-byte-i64-int64-x2F-x2F-8-byte-i32-int32-x2F-x2F-4-byte-type-T3-struct-i8-int8-x2F-x2F-1-byte-i32-int32-x2F-x2F-4-byte-i64-int64-x2F-x2F-8-byte-func-main-t1-x3D-T1-fmt-Println-unsafe-Sizeof-t1-x2F-x2F-4-bytes-t2-x3D-T2-fmt-Println-unsafe-Sizeof-t2-x2F-x2F-24-bytes-t3-x3D-T3-fmt-Println-unsafe-Sizeof-t3-x2F-x2F-16-bytes"><a href="#type-T1-struct-bool-bool-x2F-x2F-1-byte-i16-int16-x2F-x2F-2-byte-type-T2-struct-i8-int8-x2F-x2F-1-byte-i64-int64-x2F-x2F-8-byte-i32-int32-x2F-x2F-4-byte-type-T3-struct-i8-int8-x2F-x2F-1-byte-i32-int32-x2F-x2F-4-byte-i64-int64-x2F-x2F-8-byte-func-main-t1-x3D-T1-fmt-Println-unsafe-Sizeof-t1-x2F-x2F-4-bytes-t2-x3D-T2-fmt-Println-unsafe-Sizeof-t2-x2F-x2F-24-bytes-t3-x3D-T3-fmt-Println-unsafe-Sizeof-t3-x2F-x2F-16-bytes" class="headerlink" title="type T1 struct {    bool bool  &#x2F;&#x2F; 1 byte    i16  int16 &#x2F;&#x2F; 2 byte } type T2 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i64 int64 &#x2F;&#x2F; 8 byte    i32 int32 &#x2F;&#x2F; 4 byte } type T3 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i32 int32 &#x2F;&#x2F; 4 byte    i64 int64 &#x2F;&#x2F; 8 byte } func main() {    t1 :&#x3D; T1{}    fmt.Println(unsafe.Sizeof(t1)) &#x2F;&#x2F; 4 bytes     t2 :&#x3D; T2{}      fmt.Println(unsafe.Sizeof(t2)) &#x2F;&#x2F; 24 bytes     t3 :&#x3D; T3{}    fmt.Println(unsafe.Sizeof(t3)) &#x2F;&#x2F; 16 bytes }"></a>type T1 struct {    bool bool  &#x2F;&#x2F; 1 byte    i16  int16 &#x2F;&#x2F; 2 byte } type T2 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i64 int64 &#x2F;&#x2F; 8 byte    i32 int32 &#x2F;&#x2F; 4 byte } type T3 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i32 int32 &#x2F;&#x2F; 4 byte    i64 int64 &#x2F;&#x2F; 8 byte } func main() {    t1 :&#x3D; T1{}    fmt.Println(unsafe.Sizeof(t1)) &#x2F;&#x2F; 4 bytes     t2 :&#x3D; T2{}      fmt.Println(unsafe.Sizeof(t2)) &#x2F;&#x2F; 24 bytes     t3 :&#x3D; T3{}    fmt.Println(unsafe.Sizeof(t3)) &#x2F;&#x2F; 16 bytes }</h2><h2 id=""><a href="#" class="headerlink" title="- "></a>- </h2></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>go中的不同版本的GC原理是什么？<ul>
+<li>Go V1.3之前<ul>
+<li>采用标记清除算法： 1.进行STW，然后用可达性分析算法分析出可以到达的对象和不可到达的对象 2.清除所有不可到达的对象 3.停止STW，让程序继续运行 GoV1.3做了一些简单的优化： 把停止STW提前到清除操作，但是这就优化了一点点，这个算法本身就会出现较长的STW。<ul>
+<li>最主要的缺点就是长时间的STW</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Go V1.5的三色并发标记法<ul>
+<li>使用了三色标记法和写屏障技术，提高了效率。 其执行过程可以分成标记（Mark）和清除（Sweep）两个阶段：  标记阶段 — 从根对象出发查找并标记堆中所有存活的对象；  清除阶段 — 遍历堆中的全部对象，回收未被标记的垃圾对象并将回收的内存加入空闲链表。 标记清除算法的一大问题是在标记期间，需要暂停程序（Stop the world，STW），标记结束之后，用户程序才可以继续执行。为了能够异步执行，减少 STW 的时间，Go 语言采用了三色标记法。</li>
+<li>三色标记算法将程序中的对象分成白色、黑色和灰色三类。 白色：不确定对象。 灰色：存活对象，子对象待处理。 黑色：存活对象。</li>
+<li>具体原理： 标记开始时，所有对象加入白色集合（这一步需 STW ）。首先将根对象标记为灰色，加入灰色集合，垃圾搜集器取出一个灰色对象，将其标记为黑色，并将其指向的对象标记为灰色，加入灰色集合。重复这个过程，直到灰色集合为空为止，标记阶段结束。那么白色对象即可需要清理的对象，而黑色对象均为根可达的对象，不能被清理。</li>
+<li>三色标记法并发执行仍存在一个问题，即在 GC 过程中，对象指针发生了改变。比如下面的例子： A (黑) -&gt; B (灰) -&gt; C (白) -&gt; D (白) 正常情况下，D 对象最终会被标记为黑色，不应被回收。但在标记过程和用户程序执行过程中(这两个是并发执行的，所以可能会出现并发问题)，用户程序删除了 C 对 D 的引用，而 A 获得了 D 的引用。标记继续进行，D 就没有机会被标记为黑色了（A 已经处理过，这一轮不会再被处理）。 A (黑) -&gt; B (灰) -&gt; C (白)   ↓ D (白)</li>
+<li>可以看出，有两种情况，在三色标记法中，是不希望被发生的。 条件1: 一个白色对象被黑色对象引用(白色被挂在黑色下) 条件2: 灰色对象与它之间的可达关系的白色对象遭到破坏(灰色同时丢了该白色) 如果当以上两个条件同时满足时，就会出现对象丢失现象! 为了解决这个问题，只需要满足强三色不变式或者弱三色不变式中的一个就可以了，强三色不变式和弱三色不变式的具体实现就是内存屏障技术，这个技术会在进程读取对象、创建新对象以及更新对象指针时执行一段代码。 注意，这个时候只需要用插入屏障&#x2F;删除屏障中的一个就行了<ul>
+<li>强三色不变式： 强三色不变色实际上是强制性的不允许黑色对象引用白色对象，这样就不会出现有白色对象被误删的情况。<ul>
+<li>插入屏障（对象被引用的时候触发的机制）： 在A对象引用B对象的时候，B对象被标记为灰色。<ul>
+<li>插入屏障只能用在堆上的对象：栈空间的特点是容量小,但是要求响应速度快,因为函数调用弹出频繁使用, 所以“插入屏障”机制,在栈空间的对象操作中不使用. 而仅仅使用在堆空间对象的操作中. 那么你可能会问，那如果这个版本里我们选择使用了使用插入屏障，那栈里面的对象不是管不了了？出现对象丢失的情况怎么办呢？Go里面是这样解决的：在准备回收白色对象之前，对栈重新进行三色标记，这段标记时间是STW的，称为reScan</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>弱三色不变式： 黑色对象可以引用白色对象，但是这个白色对象必须存在其他灰色对象对它的引用，或者可达它的链路上游存在灰色对象。 <ul>
+<li>删除屏障（对象被删除的时候触发的机制）： 被删除的对象，如果自身为灰色或者白色，那么被标记为灰色。<ul>
+<li>这种方式倒是堆和栈都可以用，但是这种方法回收精度低，一个对象即使被删除了最后一个指向它的指针也依旧可以活过这一轮，在下一轮GC中被清理掉。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Go V1.8的混合写屏障机制<ul>
+<li>插入写屏障和删除写屏障的短板： 插入写屏障：结束时需要STW来重新扫描栈  删除写屏障：回收精度低 Go V1.8版本引入了混合写屏障机制（hybrid write barrier），避免了对栈re-scan的过程，极大的减少了STW的时间。结合了两者的优点。 注意，混合写屏障只在堆上启动，栈上不启动，栈上启动的是删除屏障来解决rescan问题<ul>
+<li>混合写屏障的具体操作： 1、GC开始首先将栈上可达的对象全部扫描并标记为黑色(之后不再进行第二次重复扫描，无需STW) 2、GC期间，任何在栈上创建的新对象，均为黑色。 3、被删除的对象标记为灰色。（删除屏障） 4、被添加的对象标记为灰色。（插入屏障）<ul>
+<li>情景1：对象被一个堆对象删除引用，成为栈对象的下游<ul>
+<li>1</li>
+<li>2</li>
+</ul>
+</li>
+<li>场景2： 对象被一个栈对象删除引用，成为另一个栈对象的下游<ul>
+<li>1</li>
+<li>2</li>
+<li>3</li>
+</ul>
+</li>
+<li>场景3：对象被一个堆对象删除引用，成为另一个堆对象的下游<ul>
+<li>1(黑色节点为什么特殊呢？存疑)</li>
+<li>2</li>
+<li>3</li>
+</ul>
+</li>
+<li>场景四：对象从一个栈对象删除引用，替代之前的下游成为另一个堆对象的下游<ul>
+<li>1</li>
+<li>2</li>
+<li>3</li>
+</ul>
+</li>
+<li>按照之前的规律，你可能会感觉会有：对象从一个堆中删除，替代之前的下游成为另一个栈的下游，但是其实是不存在这种可能的，因为go会进行内存逃逸分析，然后进行分配内存的。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>GO中GC算法的演进了解吗？<ul>
+<li>Go 1：mark and sweep操作都需要STW Go 1.3：分离了mark和sweep操作，mark过程需要 STW，mark完成后让sweep任务和普通协程任务一样并行，停顿时间在约几百ms Go 1.5：引入三色并发标记法、插入写屏障，不需要每次都扫描整个内存空间，可以减少stop the world的时间，停顿时间在100ms以内 Go 1.6：使用 bitmap 来记录回收内存的位置，大幅优化垃圾回收器自身消耗的内存，停顿时间在10ms以内 Go 1.7：停顿时间控制在2ms以内 Go 1.8：混合写屏障（插入写屏障和删除写屏障），停顿时间在0.5ms左右 Go 1.9：彻底移除了栈的重扫描过程 Go 1.12：整合了两个阶段的 Mark Termination Go 1.13：着手解决向操作系统归还内存的，提出了新的 Scavenger Go 1.14：替代了仅存活了一个版本的 scavenger，全新的页分配器，优化分配内存过程的速率与现有的扩展性问题，并引入了异步抢占，解决了由于密集循环导致的 STW 时间过长的问题</li>
+</ul>
+</li>
+<li>Go的GC如何进行调优呢？<ul>
+<li>Go 的 GC 被设计为极致简洁，与较为成熟的 Java GC 的数十个可控参数相比，严格意义上来讲，Go 可供用户调整的参数只有 GOGC 环境变量。当我们谈论 GC 调优时，通常是指减少用户代码对 GC 产生的压力 GC 的调优是在特定场景下产生的，并非所有程序都需要针对 GC 进行调优。只有那些对执行延迟非常敏感、 当 GC 的开销成为程序性能瓶颈的程序，才需要针对 GC 进行性能调优，几乎不存在于实际开发中 99% 的情况。  所以基本上我们都是通过程序员编码的能力来进行GC调优的 当然。我们还应该谨记 过早优化是万恶之源这一警语，在没有遇到应用的真正瓶颈时，将宝贵的时间分配在开发中其他优先级更高的任务上。</li>
+</ul>
+</li>
+<li>在编码中如何尽量的减少GC的可能呢？<ul>
+<li>少量使用+连接string（使用+操作符进行拼接时，会对字符串进行遍历，计算并开辟一个新的空间来存储原来的两个字符串），最好用切片的append函数来连接</li>
+<li>slice提前分配足够的内存来降低扩容带来的拷贝</li>
+<li>避免map 的key对象过多（多key），导致扫描时间增加</li>
+<li>变量复用，减少对象分配，例如使用池类技术来复用需要频繁创建临时对象或者使用全局变量来复用</li>
+</ul>
+</li>
+<li>GC的触发条件是什么？<ul>
+<li>分为主动触发（手动触发）和被动触发： 主动触发：通过调用 runtime.GC 来触发GC，此调用阻塞式地等待当前GC运行完毕 被动触发：通过两种来进行触发：                1.根据阈值触发：使用步调（Pacing）算法，其核心思想是控制内存增长的比例,每次内存分配时检查当前内存分配量是否已达到阈值，比如当前堆内存占用到达上次GC结束后占用内存的2倍时，就会触发GC。                2.定时触发：如果两分钟之内没有任何GC，就会强制触发GC。</li>
+</ul>
+</li>
+<li>如果内存分配速度超过了标记清除的速度怎么办？<ul>
+<li>目前的 Go 实现中，当 GC 触发后，会进入标记前的准备阶段。这个阶段会设置一个标志（标志代表着目前内存分配速度是否过快），并在堆内存分配函数调用时进行检查。 当新的内存分配时，会暂停那些分配内存过快的 goroutine，并将其转去执行一些辅助标记的工作，从而达到放缓继续分配、辅助 GC 的标记工作的目的。</li>
+</ul>
+</li>
+<li>为什么小对象多了会造成GC压力？<ul>
+<li>因为创建小对象过多，会导致GC三色标记法消耗过多的CPU。所以要减少GC的压力，最好减少对象的分配</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/">http://example.com/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Go中的协程的底层是怎么实现的？</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#type-T1-struct-bool-bool-x2F-x2F-1-byte-i16-int16-x2F-x2F-2-byte-type-T2-struct-i8-int8-x2F-x2F-1-byte-i64-int64-x2F-x2F-8-byte-i32-int32-x2F-x2F-4-byte-type-T3-struct-i8-int8-x2F-x2F-1-byte-i32-int32-x2F-x2F-4-byte-i64-int64-x2F-x2F-8-byte-func-main-t1-x3D-T1-fmt-Println-unsafe-Sizeof-t1-x2F-x2F-4-bytes-t2-x3D-T2-fmt-Println-unsafe-Sizeof-t2-x2F-x2F-24-bytes-t3-x3D-T3-fmt-Println-unsafe-Sizeof-t3-x2F-x2F-16-bytes"><span class="toc-number">1.</span> <span class="toc-text">type T1 struct {    bool bool  &#x2F;&#x2F; 1 byte    i16  int16 &#x2F;&#x2F; 2 byte } type T2 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i64 int64 &#x2F;&#x2F; 8 byte    i32 int32 &#x2F;&#x2F; 4 byte } type T3 struct {    i8  int8  &#x2F;&#x2F; 1 byte    i32 int32 &#x2F;&#x2F; 4 byte    i64 int64 &#x2F;&#x2F; 8 byte } func main() {    t1 :&#x3D; T1{}    fmt.Println(unsafe.Sizeof(t1)) &#x2F;&#x2F; 4 bytes     t2 :&#x3D; T2{}      fmt.Println(unsafe.Sizeof(t2)) &#x2F;&#x2F; 24 bytes     t3 :&#x3D; T3{}    fmt.Println(unsafe.Sizeof(t3)) &#x2F;&#x2F; 16 bytes }</span></a></li><li class="toc-item toc-level-2"><a class="toc-link"><span class="toc-number">2.</span> <span class="toc-text">- </span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/" title="Go中的内存管理？">Go中的内存管理？</a><time datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的协程的底层是怎么实现的？">Go中的协程的底层是怎么实现的？</a><time datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的map的底层是怎么实现的？">Go中的map的底层是怎么实现的？</a><time datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的Channel的底层是怎么实现的？">Go中的Channel的底层是怎么实现的？</a><time datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="Redis内存策略">Redis内存策略</a><time datetime="2024-04-22T06:36:13.000Z" title="发表于 2024-04-22 14:36:13">2024-04-22</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

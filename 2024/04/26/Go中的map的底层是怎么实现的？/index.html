@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Go中的map的底层是怎么实现的？ | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Go中的map的底层是怎么实现的？ map的底层实现是什么？ map指向一个结构，叫hmap，是hashmap的缩写 type hmap struct {    &#x2F;&#x2F; 元素个数，调用 len(map) 时，直接返回此值 count     int flags     uint8 &#x2F;&#x2F; B 是 buckets 数组的长度的对数，也就是说 buckets 数组">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go中的map的底层是怎么实现的？">
+<meta property="og:url" content="http://example.com/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="Go中的map的底层是怎么实现的？ map的底层实现是什么？ map指向一个结构，叫hmap，是hashmap的缩写 type hmap struct {    &#x2F;&#x2F; 元素个数，调用 len(map) 时，直接返回此值 count     int flags     uint8 &#x2F;&#x2F; B 是 buckets 数组的长度的对数，也就是说 buckets 数组">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2024-04-26T06:38:32.000Z">
+<meta property="article:modified_time" content="2024-05-06T06:38:41.153Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Go中的map的底层是怎么实现的？',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2024-05-06 14:38:41'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Go中的map的底层是怎么实现的？</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-05-06T06:38:41.153Z" title="更新于 2024-05-06 14:38:41">2024-05-06</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Go中的map的底层是怎么实现的？"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><ul>
+<li>Go中的map的底层是怎么实现的？<ul>
+<li>map的底层实现是什么？<ul>
+<li>map指向一个结构，叫hmap，是hashmap的缩写 type hmap struct {    &#x2F;&#x2F; 元素个数，调用 len(map) 时，直接返回此值 count     int flags     uint8 &#x2F;&#x2F; B 是 buckets 数组的长度的对数，也就是说 buckets 数组的长度就是 2^B。 B         uint8 &#x2F;&#x2F; overflow 的 bucket 近似数 noverflow uint16 &#x2F;&#x2F; 计算 key 的哈希的时候会传入哈希函数 hash0     uint32    &#x2F;&#x2F; 指向 buckets 数组，大小为 2^B    &#x2F;&#x2F; 如果元素个数为0，就为 nil buckets    unsafe.Pointer &#x2F;&#x2F; 等量扩容的时候，buckets 长度和 oldbuckets 相等 &#x2F;&#x2F; 双倍扩容的时候，buckets 长度会是 oldbuckets 的两倍 oldbuckets unsafe.Pointer &#x2F;&#x2F; 指示扩容进度，小于此地址的 buckets 迁移完成 nevacuate  uintptr extra *mapextra &#x2F;&#x2F; optional fields }<ul>
+<li>buckets是桶数组，数组里面是桶，桶是这个结构： type bmap struct {    topbits  [8]uint8    keys     [8]keytype    values   [8]valuetype    pad      uintptr    overflow uintptr } 桶里面会最多装 8 个 key，这些 key 之所以会落入同一个桶，是因为它们经过哈希计算后，哈希结果是“一类”的。在桶内，又会根据 key 计算出来的 hash 值的高 8 位来决定 key 到底落入桶内的哪个位置（这个位置叫槽位）注意bucket中，key和key是放在一起的，value和value是放在一起的，为啥这样放呢，源码里面说这样的好处是在某些情况下可以省去padding字段（因为内存对齐）。比如这个map是   map[int64]int8   key占8个字节，value占1个字节。如果按照 key&#x2F;value&#x2F;key&#x2F;value&#x2F;… 这样的模式存储，那在每一个 key&#x2F;value 对之后都要额外 padding 7 个字节；而将所有的 key，value 分别绑定到一起，这种形式 key&#x2F;key&#x2F;…&#x2F;value&#x2F;value&#x2F;…，则只需要在最后添加 padding。 并且每个bucket设计成只能存放8个kv，如果有第九个进来这个bucket的话，会新建一个bucket，并且通过尾插法，添加到这个bucket的后面，形成链表（是通过overflow指针连接的）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>map的key定位过程是什么<ul>
+<li>我们要查看某个key在哪个桶里的某个位置，就要先计算key的hash值，在这里hash值在64位机的情况下是64个bit位。那么如何定位桶呢，是根据这64位的最后B个bit位。 例如，现在有一个 key 经过哈希函数计算后，得到的哈希结果是： 10010111 | 000011110110110010001111001010100010010110010101010 │ 01010 用最后的 5 个 bit 位，也就是 01010，值为 10，也就是 10 号桶。 那怎么找对应的槽位呢，是根据这个hash值的前8个bit位，这个8是固定的。 如果是get操作，并且在bucket里面找不到，并且overflow不为空，说明可能这个key在overflow中，所以要往后遍历overflow。</li>
+</ul>
+</li>
+<li>map的赋值操作流程是什么？<ul>
+<li>首先会检查 map 的标志位 flags。如果 flags 的写标志位此时被置 1 了，说明有其他协程在执行“写”操作，进而导致程序 panic。这也说明了 map 对协程是不安全的。 由于扩容是渐进式的，如果 map 处在扩容的过程中，那么当 key 定位到了某个 bucket 后，需要确保这个 bucket 对应的老 bucket 完成了迁移过程。即老 bucket 里的 key 都要迁移到新的 bucket 中来（分裂到 2 个新 bucket），才能在新的 bucket 中进行插入或者更新的操作。 在正式安置 key 之前，还要检查 map 的状态，看它是否需要进行扩容。如果满足扩容的条件，就主动触发一次扩容操作。</li>
+</ul>
+</li>
+<li>map的扩容操作的过程是什么样的？<ul>
+<li>map的扩容时机： 1.负载因子超过了6.5 2.使用了太多的溢出桶 这两个只要满足一个就会触发扩容。 负载因子&#x3D;元素个数&#x2F;桶个数（这个桶的个数是不带溢出桶的个数的，是仅仅计算2^B）<ul>
+<li>关于第一点：当元素多，桶少的时候，查找效率、插入效率、删除效率、修改效率都会变低，所以需要扩容，增加桶的个数。 关于第二点：思想一个场景，比如说先插入很多元素，这样会创建很多的overflow bucket，然后再把这些元素删除一部分，再进行插入一些元素，又创建了很多overflow bucket，但是元素个数不多，桶也不多，只有溢出桶多，这样循环往复，就导致很多ooverflow桶留了下来，但是元素的个数没多少。这就像有很多房子，但是没住多少人，你要找人的话会很费劲。</li>
+</ul>
+</li>
+<li>扩容的策略：对于上面提到的1和2，他们俩扩容策略不一样。 1.对于1，元素多，bucket少，他的扩容策略是将B加1，提高bucket的数量（直接提高2倍）， 2.对于2，元素其实没那么多，bucket也不多，只是很多bucket没有装满而已。他的扩容策略是新开辟一个新的bucket空间，将老的bucket以及后面的overflow移动到新bucket中，让他们排列更加紧密一些。</li>
+<li>map采用渐进式扩容 map扩容会将原有的kv搬迁到新的内存地址，如果map存储了大量的kv，一次性搬迁耗时会非常久，所以gomap采用了一种叫渐进式扩容的方式：原有的kv不会一次性搬迁完，每次搬迁最多搬2个bucket，当每次插入、修改、删除key的时候，都会尝试进行搬迁的操作。 具体来说，把老的buckets挂在到oldbuckets字段上，把新的buckets挂载到newbuckets字段上。</li>
+<li>搬迁过程是什么？ 1.对于1，buckets的数量变了，比如说原来是2^5个，现在是2^6个，所以现在如果要看hash值要看后6位了，才能定位到他的bucket位置。 2.对于2，由于buckets数量不变，可以按照序号进行搬，比如原来再0号的buckets，搬到新的依然再0号。 搬迁函数里面还有一个点：每次执行搬迁函数只会完成一个bucket的搬迁工作。所以这个函数一共有两层循环，外层遍历桶（包括普通桶和溢出桶），内层遍历桶内数据。</li>
+</ul>
+</li>
+<li>map的遍历过程是什么样的？<ul>
+<li>本来map的遍历过程是比较简单的：遍历所有的bucket和他后面挂载的overflow bucket，然后遍历里面的cell。 但是由于扩容不是一下子搬迁过去的，map的状态一般都是处于一个中间态：有些bucket在新的map里，有的在老的map里。<ul>
+<li>假设我们有下图所示的一个 map，起始时 B &#x3D; 1，有两个 bucket，后来触发了扩容（这里不要深究扩容条件，只是一个设定），B 变成 2。并且， 1 号 bucket 中的内容搬迁到了新的 bucket，1 号裂变成 1 号和 3 号；0 号 bucket 暂未搬迁。老的 bucket 挂在在 *oldbuckets 指针上面，新的 bucket 则挂在 *buckets 指针上面。</li>
+<li>这时，我们对此 map 进行遍历。假设经过初始化后，startBucket &#x3D; 3，offset &#x3D; 2。（这个数是init随机的）于是，遍历的起点将是 3 号 bucket 的 2 号 cell，下面这张图就是开始遍历时的状态：</li>
+<li>标红的表示起始位置，bucket 遍历顺序为：3 -&gt; 0 -&gt; 1 -&gt; 2。 因为 3 号 bucket 对应老的 1 号 bucket，因此先检查老 1 号 bucket 是否已经被搬迁过。这里老1号已经搬迁过了，所以可以直接遍历新的3号。之后把3号bucket的cell全遍历出来了 遍历3号之后，要遍历新0号，新0号是老0号拆出来的，所以先去判断老0号是否搬迁，这里是没搬迁的，所以我们要遍历老0号，但是又不能全部遍历出来，需要根据标志位是0&#x2F;1把分配到新0号的key遍历出来就可以了</li>
+<li>map 遍历的核心在于理解 2 倍扩容时，老 bucket 会分裂到 2 个新 bucket 中去。遍历操作会按照新 bucket 的序号顺序进行，当碰到老 bucket 未搬迁的情况时，需要在老 bucket 中找到将来要搬迁到新 bucket 的 key遍历出来，而不是把老的全部遍历出来。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>map遍历为什么是无序的？<ul>
+<li>使用range多次遍历map时输出的key和value的顺序可能不会相同，这是go的设计值有意为之的，是为了提醒开发者们，go底层并不保证map的遍历稳定。 那么为什么是无序的呢？ 其实是因为可移植性问题，如果大家都依赖map是可以有序遍历出来的，到后来如果不支持有序遍历出来，会出现很多移植性问题，再一个的原因是因为map会扩容，然后再把桶内的元素进行拆分，所以就算进行有序的进行查找也没啥用，而且为了不误导大家，故意设计成每次都会从一个随机的bucket，然后从里面进行随机的cell进行遍历</li>
+</ul>
+</li>
+<li>map为什么是非线程安全的呢？<ul>
+<li>默认是并发不安全的，如果同时对map进行并发读写的话，会panic，因为官方认为map更应该适配典型使用场景（也就是说不在并发场景下进行使用）如果是为了小部分并发访问条件下，导致大部分程序付出加锁代价的话，是不值得的，所以决定了不支持。 并且map在进行查找、赋值、遍历、删除的过程中都会进行检测写标志，一旦发现有其他协程也在写就会直接panic 如果要保证map的线程安全： 可以使用 1.map+sync.RWMutex（基础map+读写锁） 2.sync.Map线程安全的map</li>
+</ul>
+</li>
+<li>go中map如何解决hash冲突的？<ul>
+<li>Go map采用的是链地址法解决冲突：当插入key到map中时，当key定位的bucket已经满了8个元素之后，会创建一个溢出桶，并且把溢出桶插入到当前桶所在的链表尾部。（可以提到Java1.7的头插法的死循环问题）</li>
+</ul>
+</li>
+<li>map的负载因子为什么是6.5<ul>
+<li>负载因子&#x3D;元素的个数&#x2F;桶个数，其实这个6.5是go官方进行大量测试得出的数字，因为负载因子主要的作用是为了平衡buckets的存储空间和查找元素的性能之间的取舍，如果空间利用率高的话，就容易出现哈希冲突，这时候负载因子的值比较高。如果是负载因子小的情况下，说明空间利用率不太高。反正就是得在这里做一些取舍，所以go官方取了一个折中的值，不是随便得出的6.5，是通过大量测试得出的结果。</li>
+</ul>
+</li>
+<li>map和sync.Map哪个的性能比较好？<ul>
+<li>得看什么场景下了，如果是非并发场景下，那肯定是map性能好，如果是并发场景下，map就需要加读写锁。 但是sync.Map采用了空间换时间的机制，冗余了两个数据结构，分别是read和dirty type Map struct { mu Mutex read atomic.Pointer[readOnly] dirty map[any]*entry misses int } 这样做的好处是可以无锁访问read map（原版加的是读锁），并且会优先操作read map，倘若只操作了read map就可以满足要求了，就不用write map了</li>
+</ul>
+</li>
+<li>如何比较两个map是相等的？<ul>
+<li>要比较两个map是否相等，需要按照以下步骤进行比较： 1.检查两个map的长度是否相等。如果长度不相等，它们显然不相等。 2.遍历一个map的键，并检查其在另一个map中是否存在相同的键，并且对应的值也相等。</li>
+</ul>
+</li>
+<li>可以边遍历map，边删除map里面的key吗？<ul>
+<li>分场景，如果是并发情况下，会panic。如果是单个协程情况下，是可以的（但是，遍历的结果就可能不会是相同的了，有可能遍历的结果集中包含了删除的 key，也有可能不包含，这取决于删除 key 的时间：是在遍历到 key 所在的 bucket 时刻前或者后）</li>
+</ul>
+</li>
+<li>float类型可以作为map的key吗？<ul>
+<li>float 型可以作为 key，但是由于精度的问题，会导致一些诡异的问题，慎用之。如果实在要用float做key，可以用string代替float</li>
+</ul>
+</li>
+<li>访问map中的key，需要注意什么问题<ul>
+<li>当访问map中不存在的key的时候，go会根据元素的数据类型返回对应的零值，比如nil、”“、false、0，所以说，取值操作总会有值放回，所以不能通过取出来的值，来判断map里面是否有key。 如果要判断map中是否存在key的话，需要返回第二个参数 &#x2F;&#x2F; 错误的 key 检测方式 func main() { x :&#x3D; map[string]string{“one”: “2”, “two”: “”, “three”: “3”} if v :&#x3D; x[“two”]; v &#x3D;&#x3D; “” { 	fmt.Println(“key two is no entry”) &#x2F;&#x2F; 键 two 存不存在都会返回的空字符串 } } &#x2F;&#x2F; 正确示例 func main() { x :&#x3D; map[string]string{“one”: “2”, “two”: “”, “three”: “3”} if _, ok :&#x3D; x[“two”]; !ok { 	fmt.Println(“key two is no entry”) } }</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/">http://example.com/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Go中的协程的底层是怎么实现的？</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Go中的Channel的底层是怎么实现的？</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/" title="Go中的内存管理？">Go中的内存管理？</a><time datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的协程的底层是怎么实现的？">Go中的协程的底层是怎么实现的？</a><time datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的map的底层是怎么实现的？">Go中的map的底层是怎么实现的？</a><time datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的Channel的底层是怎么实现的？">Go中的Channel的底层是怎么实现的？</a><time datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="Redis内存策略">Redis内存策略</a><time datetime="2024-04-22T06:36:13.000Z" title="发表于 2024-04-22 14:36:13">2024-04-22</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

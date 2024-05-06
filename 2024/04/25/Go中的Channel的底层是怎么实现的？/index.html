@@ -1,0 +1,246 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Go中的Channel的底层是怎么实现的？ | 是小白菜哦</title><meta name="author" content="小白菜"><meta name="copyright" content="小白菜"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Go中的Channel的底层是怎么实现的？ CSP模型是什么？ CSP是一种并发模型，他以通信的方式来共享内存，而不同于传统的多线程通过共享内存进行通信的方式。   channel的底层数据结构是什么？ type hchan struct { qcount   uint  &#x2F;&#x2F; 队列中的总元素个数 dataqsiz uint  &#x2F;&#x2F; 环形队列大小，即可存放">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go中的Channel的底层是怎么实现的？">
+<meta property="og:url" content="http://example.com/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/index.html">
+<meta property="og:site_name" content="是小白菜哦">
+<meta property="og:description" content="Go中的Channel的底层是怎么实现的？ CSP模型是什么？ CSP是一种并发模型，他以通信的方式来共享内存，而不同于传统的多线程通过共享内存进行通信的方式。   channel的底层数据结构是什么？ type hchan struct { qcount   uint  &#x2F;&#x2F; 队列中的总元素个数 dataqsiz uint  &#x2F;&#x2F; 环形队列大小，即可存放">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg">
+<meta property="article:published_time" content="2024-04-25T06:37:57.000Z">
+<meta property="article:modified_time" content="2024-05-06T06:38:21.471Z">
+<meta property="article:author" content="小白菜">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg"><link rel="shortcut icon" href="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/132124.png"><link rel="canonical" href="http://example.com/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Go中的Channel的底层是怎么实现的？',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2024-05-06 14:38:21'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/mouse.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css"><script src="/live2d-widget/autoload.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/StaticFile_HEXO@latest/butterfly/css/plugins.min.css"><meta name="generator" content="Hexo 6.2.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">是小白菜哦</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Go中的Channel的底层是怎么实现的？</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-05-06T06:38:21.471Z" title="更新于 2024-05-06 14:38:21">2024-05-06</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Go中的Channel的底层是怎么实现的？"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><ul>
+<li>Go中的Channel的底层是怎么实现的？<ul>
+<li>CSP模型是什么？<ul>
+<li>CSP是一种并发模型，他以通信的方式来共享内存，而不同于传统的多线程通过共享内存进行通信的方式。</li>
+</ul>
+</li>
+<li>channel的底层数据结构是什么？<ul>
+<li>type hchan struct { qcount   uint  &#x2F;&#x2F; 队列中的总元素个数 dataqsiz uint  &#x2F;&#x2F; 环形队列大小，即可存放元素的个数 buf      unsafe.Pointer &#x2F;&#x2F; 环形队列指针（只针对有缓冲区的channel） elemsize uint16  &#x2F;&#x2F;channel中每个元素的大小 closed   uint32  &#x2F;&#x2F;标识channel的关闭状态 elemtype *_type &#x2F;&#x2F; channel中数据的元素类型 sendx    uint   &#x2F;&#x2F; 发送索引，元素写入时存放到队列中的位置 recvx    uint   &#x2F;&#x2F; 接收索引，元素从队列的该位置读出 recvq    waitq  &#x2F;&#x2F; 等待读消息的goroutine队列 sendq    waitq  &#x2F;&#x2F; 等待写消息的goroutine队列 lock mutex  &#x2F;&#x2F;互斥锁，chan不允许并发读写 }</li>
+</ul>
+</li>
+<li>channel为什么可以做到线程安全？<ul>
+<li>Channel 可以理解是一个先进先出的队列，channel底层也维护了一个锁，在出队入队的时候都加锁了。所以说通过管道进行通信,发送一个数据到Channel和从Channel接收一个数据都是原子性的。</li>
+</ul>
+</li>
+<li>向channel发送数据的过程是怎么样的？<ul>
+<li>1.如果channel的读等待队列存在接收者       (1)说明有协程在等待读取数据，在排队，是读多写少。就说明缓冲区中无数据或无缓冲区，将直接从 recvq取出一个G（协程） ，并把数据写入协程中，最后把该 G 唤醒，结束发送过程。 2. 如果channel的读等待队列不存在接收者      (1)若循环数组中有空余位置，则将数据写入缓冲区，结束发送过程。      (2)若循环数组中没有空余位置，则将当前 G 加入 sendq （等待读请求的队列），协程被挂起，等待被读 goroutine 唤醒。</li>
+</ul>
+</li>
+<li>从channel读取数据的过程是怎么样的？<ul>
+<li>1.如果 channel 的写等待队列存在发送者goroutine。  (1)如果是无缓冲 channel，直接从第一个发送者goroutine那里把数据拷贝给接收变量，唤醒发送的 goroutine。  (2)如果是有缓冲 channel(已满)，将循环数组buf的队首元素拷贝给接收变量，将第一个发送者gorutine的数据拷贝到buf循环数组队尾，唤醒发送的 goroutine。 2.如果 channel的写等待队列不存在发送者goroutine  (1)如果循环数组buf非空，将循环数组buf的队首元素持贝给接收变量  (2)如果循环数组buf为空，这个时候就会走阻塞接收的流程，将当前 goroutine 加入读等待队列，并挂起等待唤醒</li>
+</ul>
+</li>
+<li>关闭一个channel的过程是怎么样的？<ul>
+<li>1.加锁，然后修改关闭状态， 2.关闭 channel 时会将 recvq 中的 G 全部唤醒，本该写入 G 的数据位置为 nil。将 sendq 中的 G 全部唤醒，但是这些 G 会 panic（所以，在不了解 channel 还有没有接收者的情况下，不能贸然关闭 channel）。<ul>
+<li>关闭channel会发生panic 出现的场景还有： 1.关闭值为 nil 的 channel 2.关闭已经关闭的 channel 3.向已经关闭的 channel 中写数据</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>无缓冲的channel的发送和接受是同步的吗？<ul>
+<li>channel 无缓冲时，发送阻塞直到数据被接收，接收阻塞直到读到数据； channel 有缓冲时，当缓冲满时发送阻塞，当缓冲空时接收阻塞。</li>
+</ul>
+</li>
+<li>无缓冲的channel和有缓冲的channel的区别<ul>
+<li>对于无缓冲的channel，发送方会阻塞该信道，直到接收方从该信道接收到数据为止。如果信道中没有数据，接收方也会进行阻塞，直到发送方将数据发送到信道中。 对于有缓冲的channel，发送方在缓冲区使用完的时候阻塞，接收方在信道为空的时候进行阻塞</li>
+<li>func main() { st :&#x3D; time.Now() &#x2F;&#x2F; 记录当前时间 	ch :&#x3D; make(chan bool) &#x2F;&#x2F; 创建一个无缓冲的通道 	go func() { 	time.Sleep(time.Second * 2) &#x2F;&#x2F; 休眠2秒 	&lt;-ch &#x2F;&#x2F; 从通道接收数据，此处会阻塞，直到有数据可接收 }() 	ch &lt;- true &#x2F;&#x2F; 向通道发送数据，发送方会阻塞，直到有接收方接收到数据 	fmt.Printf(“花费  %.1f s\n”, time.Now().Sub(st).Seconds()) &#x2F;&#x2F; 花费2s }</li>
+<li>func main() { st :&#x3D; time.Now() ch :&#x3D; make(chan bool, 2) go func ()  { 	time.Sleep(time.Second * 2) 	&lt;-ch }() ch &lt;- true ch &lt;- true &#x2F;&#x2F; 缓冲区为 2，发送方不阻塞，继续往下执行 fmt.Printf(“cost %.1f s\n”, time.Now().Sub(st).Seconds()) &#x2F;&#x2F; cost 0.0 s ch &lt;- true &#x2F;&#x2F; 缓冲区使用完，发送方阻塞，2s 后接收方接收到数据，释放一个插槽，继续往下执行 fmt.Printf(“cost %.1f s\n”, time.Now().Sub(st).Seconds()) &#x2F;&#x2F; cost 2.0 s }</li>
+</ul>
+</li>
+<li>channel如何控制协程的并发执行顺序？<ul>
+<li>我们知道，多个协程并发执行的时候，执行的时候不能保证协程的先后执行顺序，但是我们可以用channel来控制协程的执行顺序。 比如说现在有三个协程要进行顺序控制，我们就可以创建三个channel，然后等协程1执行完，再给协程2发消息，因为是阻塞等待吗，依次类推就可以了，并且有一个优化的点是可以用空结构体，消耗资源少。</li>
+</ul>
+</li>
+<li>从一个关闭的channel中可以读出数据吗？<ul>
+<li>&#x2F;&#x2F;从一个有缓冲的 channel 里读数据，当 channel 被关闭，依然能读出有效值。 &#x2F;&#x2F;只有当返回的 ok 为 false 时，读出的数据才是无效的。 func main() { ch :&#x3D; make(chan int, 5) ch &lt;- 18 close(ch) x, ok :&#x3D; &lt;-ch if ok { 	fmt.Println(“received: “, x)&#x2F;&#x2F;received:  18 } 	x, ok &#x3D; &lt;-ch&#x2F;&#x2F;这时候ch里已经没有数据了，所以返回的就是false if !ok { 	fmt.Println(“channel closed, data invalid.”)&#x2F;&#x2F;channel closed, data invalid. 	} }</li>
+</ul>
+</li>
+<li>如何优雅的关闭channel？<ul>
+<li>根据 sender 和 receiver 的个数，分下面几种情况： 1.一个 sender，一个 receiver 2.一个 sender， M 个 receiver 3.N 个 sender，一个 reciver 4.N 个 sender， M 个 receiver 对于 1，2，只有一个 sender 的情况就不用说了，直接从 sender 端关闭就好了，没有问题。重点关注第 3，4 种情况。<ul>
+<li>第三种情况下的方式是： 增加一个传递关闭信号的 channel，receiver 通过信号 channel 下达关闭数据 channel 指令。senders 监听到关闭信号后，停止发送数据。（由于channel是线程安全的，所以可以这样做）</li>
+<li>第四种情况下的方式是： 和第 3 种情况不同，这里有 M 个 receiver，如果直接还是采取第 3 种解决方案，可能会出现多次关闭的情况，因为receiver之间对关闭channel是无感的，因此需要增加一个中间人，M 个 receiver 都向它发送关闭 dataCh 的“请求”，中间人收到第一个请求后，就会直接下达关闭 dataCh 的指令（通过关闭 stopCh，这时就不会发生重复关闭的情况，因为 stopCh 的发送方只有中间人一个）。另外，这里的 N 个 sender 也可以向中间人发送关闭 dataCh 的请求。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>channel在什么情况下会出现资源泄露的状况？<ul>
+<li>channel由于有协程的阻塞队列，可能会导致协程泄漏，比如说协程在发送或者接受的时候进行阻塞，但是channel一致是满的或者空的，协程就会一直阻塞，这时候协程就发生泄漏了。</li>
+</ul>
+</li>
+<li>channel有哪些应用呢？<ul>
+<li>停止信号<ul>
+<li>作为停止信号使用，比如优雅的关闭channel，在上面，可以引导着说</li>
+</ul>
+</li>
+<li>任务定时<ul>
+<li>超时控制<ul>
+<li>func main() { var stopChannel &#x3D; make(chan struct{}, 1) var fun &#x3D; func() { 	select { 	&#x2F;* 		&#x2F;&#x2F;定时2s，阻塞2s,2s后产生一个事件，往time这个channel写内容（写了也没啥用） 		&lt;-time.After(2 * time.Second) 		 		还有的就是go的switch语句自带break 	*&#x2F; 	case &lt;-time.After(100 * time.Millisecond): 		println(“1如果超过100毫秒就可以打印这个了”) 	case &lt;-stopChannel: 		println(“2如果等待在100毫秒之前就打印这个”) 	} } go fun() stopChannel &lt;- struct{}{} time.Sleep(50 * time.Millisecond) &#x2F;&#x2F;给fun函数一点执行时间。 } 这时候会打印（2如果等待在100毫秒之前就打印这个） 如果加点睡眠时间就会打印1了</li>
+</ul>
+</li>
+<li>定期执行某个任务<ul>
+<li>func worker() { ticker :&#x3D; time.Tick(1 * time.Second) for { 	select { 	case &lt;- ticker: 		&#x2F;&#x2F; 执行定时任务 		fmt.Println(“执行 1s 定时任务”) 	} } } 每隔 1 秒种，执行一次定时任务。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>解耦生产者和消费者<ul>
+<li>这个就是做消息队列了</li>
+</ul>
+</li>
+<li>控制并发数<ul>
+<li>在某些场景下，需要执行大量任务，但又不能一次性将所有任务同时发送给第三方资源或服务。可能是因为第三方资源有并发访问限制，或者为了避免资源过载，需要控制请求的速率<ul>
+<li>​    var limit &#x3D; make(chan int, 3) &#x2F;&#x2F; 创建一个带有缓冲大小为3的整数通道作为并发限制    for _, w :&#x3D; range work {        go func() {            limit &lt;- 1 &#x2F;&#x2F; 在执行任务之前，向限制通道发送一个值，占用一个并发槽位            w()        &#x2F;&#x2F; 执行具体的任务            &lt;-limit    &#x2F;&#x2F; 任务完成后，从限制通道接收一个值，释放一个并发槽位        }()    }</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">小白菜</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/">http://example.com/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">是小白菜哦</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/"><img class="prev-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Go中的map的底层是怎么实现的？</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/"><img class="next-cover" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Redis内存策略</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/pic.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">小白菜</div><div class="author-info__description">头发多多</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">82</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">22</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Xiaobaicai350"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Xiaobaicai350" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1499487526@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">阳光斑斓 微风含香 爱与四季 皆是向往 <img height="230" lengh="230" src="https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/1.gif"/></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%9F/" title="Go中的内存管理？">Go中的内存管理？</a><time datetime="2024-05-06T06:39:31.000Z" title="发表于 2024-05-06 14:39:31">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/05/06/Go%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的协程的底层是怎么实现的？">Go中的协程的底层是怎么实现的？</a><time datetime="2024-05-06T06:38:56.000Z" title="发表于 2024-05-06 14:38:56">2024-05-06</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/26/Go%E4%B8%AD%E7%9A%84map%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的map的底层是怎么实现的？">Go中的map的底层是怎么实现的？</a><time datetime="2024-04-26T06:38:32.000Z" title="发表于 2024-04-26 14:38:32">2024-04-26</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/25/Go%E4%B8%AD%E7%9A%84Channel%E7%9A%84%E5%BA%95%E5%B1%82%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F/" title="Go中的Channel的底层是怎么实现的？">Go中的Channel的底层是怎么实现的？</a><time datetime="2024-04-25T06:37:57.000Z" title="发表于 2024-04-25 14:37:57">2024-04-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/04/22/Redis%E5%86%85%E5%AD%98%E7%AD%96%E7%95%A5/" title="Redis内存策略">Redis内存策略</a><time datetime="2024-04-22T06:36:13.000Z" title="发表于 2024-04-22 14:36:13">2024-04-22</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://raw.githubusercontent.com/Xiaobaicai350/picBed/master/xiaobaicai/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220806101221.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By 小白菜</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">欢迎来到小白菜的blog~</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script src="/js/sakura.js"></script><script src="https://myhkw.cn/player/js/player.js" id="myhk" key="159611061656" m="1"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
